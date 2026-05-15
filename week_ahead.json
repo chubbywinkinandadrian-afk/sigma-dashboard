@@ -1,0 +1,14 @@
+{
+  "updated": "2026-05-15",
+  "mode": "close",
+  "headline": "Hot CPI kills rate cut hopes. Trump-Xi summit disappoints. Tech in freefall.",
+  "sub": "April CPI printed +3.8% YoY — hottest since May 2023. 10Y yields hit 4.6%. The Beijing summit ended without trade breakthroughs as Iran dominated talks. S&P -1.1%, Nasdaq -1.6%. Powell's era ends today as Kevin Warsh takes over.",
+  "events": [
+    { "text": "Kevin Warsh replaces Powell",    "detail": "new Fed Chair confirmed — more dovish, but hot CPI limits room",           "tag": "KEY",   "color": "purple" },
+    { "text": "CPI +3.8% YoY (Apr)",           "detail": "hottest since May 2023 — rate hike probability jumped to 45% for 2026",    "tag": "HOT",   "color": "red"    },
+    { "text": "Iran / Strait of Hormuz",        "detail": "Brent ~$106, 8.5M bpd inventory draw — ceasefire signals driving wild swings", "tag": "HOT",   "color": "red"    },
+    { "text": "Trump–Xi Beijing summit",        "detail": "no trade breakthrough — Iran focus delayed tariff progress",                "tag": "WATCH", "color": "yellow" },
+    { "text": "China tariff escalation",        "detail": "US sanctioned Chinese refineries buying Iranian oil — Beijing defied",      "tag": "WATCH", "color": "yellow" }
+  ],
+  "bias": "<strong>Stagflation risk rising.</strong> Yields spiking → tech under pressure. <strong>Energy outperforms</strong> — Brent above $100. Warsh taking over adds policy uncertainty near-term. <strong>Iran ceasefire = the key risk-on catalyst.</strong> Watch for any Hormuz resolution signal."
+}
