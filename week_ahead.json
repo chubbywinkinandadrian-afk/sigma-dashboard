@@ -1,15 +1,15 @@
 {
-  "updated": "2026-05-25",
+  "updated": "2026-06-08",
   "mode": "week",
-  "headline": "Warsh Era Begins. PCE + GDP Thursday. Markets Pricing Stagflation vs. Earnings Resilience.",
-  "sub": "Kevin Warsh takes the Fed chair oath this week amid the hottest inflation environment since 2023 — his first public remarks are an instant market mover. The Strait of Hormuz ceasefire holds but shipping remains at just 5% of pre-conflict levels, keeping oil elevated and stagflation risk alive. Thursday delivers the week's binary moment: Q1 GDP (2nd estimate) and core PCE — the Fed's preferred inflation gauge — alongside a dense earnings gauntlet from Salesforce, Costco, and Dell.",
+  "headline": "Inflation data week arrives as Iran ceasefire holds and rate-hike odds top 57%. May CPI and PPI are the fulcrum — hot prints reopen the hike trade.",
+  "sub": "May nonfarm payrolls blew past estimates at 172K, sending the 10-year yield to 4.54% and sparking a 'good news is bad news' selloff that dragged the S&P 500 back from its record 7,600 close. The Iran war's energy shock pushed April CPI to near two-year highs, and this week's May reads will determine whether pipeline inflation is easing or entrenching. New Fed Chair Kevin Warsh's first press conference lands June 17 — this week's data will write his opening script.",
   "events": [
-    { "text": "Core PCE + Q1 GDP 2nd Estimate", "detail": "Thu May 28 — hot PCE could force Warsh's hand on hikes within days of taking office", "tag": "HOT", "color": "red" },
-    { "text": "Kevin Warsh Fed Chair Oath", "detail": "First remarks watched for rate-hike signal; 4 FOMC dissents preceded him", "tag": "HOT", "color": "red" },
-    { "text": "Mega Earnings: CRM, COST, DELL, SNOW, MRVL", "detail": "AI capex commentary (Salesforce, Marvell) and consumer health (Costco) — May 27-28", "tag": "KEY", "color": "purple" },
-    { "text": "Consumer Confidence (May)", "detail": "Tue May 26 — first post-Memorial Day data; energy costs and Iran war expected to weigh", "tag": "KEY", "color": "purple" },
-    { "text": "Strait of Hormuz Shipping", "detail": "Ceasefire in place but traffic at 5% of normal; any incident reverses oil relief rally", "tag": "WATCH", "color": "yellow" },
-    { "text": "Fed Rate Hike Debate", "detail": "Cleveland Fed sees May CPI at 4.2%; FOMC had record 4 dissents — hike probability rising", "tag": "WATCH", "color": "yellow" }
+    { "text": "May CPI (Wed Jun 10)", "detail": "Most critical inflation print of 2026 — energy base effects from Iran war shock in focus; April print was highest in nearly two years", "tag": "HOT", "color": "red" },
+    { "text": "Strait of Hormuz — Ceasefire Watch", "detail": "Uneasy truce holds but shipping at just 5% of pre-war levels; any escalation re-spikes crude and stagflation risk", "tag": "HOT", "color": "red" },
+    { "text": "May PPI (Thu Jun 11)", "detail": "Producer prices complete the inflation picture ahead of Warsh's June 17 debut presser", "tag": "KEY", "color": "purple" },
+    { "text": "ECB Rate Decision (Thu Jun 11)", "detail": "First major central bank move since Iran ceasefire; guidance sets EUR/USD tone and signals global policy direction", "tag": "KEY", "color": "purple" },
+    { "text": "Fed Rate-Hike Odds (57%)", "detail": "Post-payrolls repricing — watch 10-year yield for further pressure on rate-sensitive growth stocks", "tag": "WATCH", "color": "yellow" },
+    { "text": "UMich Consumer Sentiment (Fri Jun 12)", "detail": "Household inflation expectations running hotter than forecaster models; a beat here adds to hike fears", "tag": "WATCH", "color": "yellow" }
   ],
-  "bias": "Tactically cautious with selective upside. <strong>Stagflation risk</strong> and Warsh policy uncertainty cap the rally, but <strong>Q1 earnings +27% YoY</strong> and Iran ceasefire optimism provide a floor. Thursday's PCE print is the week's fulcrum — a hot number reopens the rate-hike trade and hits long-duration tech."
+  "bias": "Tactically cautious into the inflation prints. <strong>Hot CPI = yields spike, growth sells off hard; cool CPI = relief rally, tech and semis lead.</strong> Asymmetric risk is to the upside on yields given the Strait of Hormuz energy overhang — fade strength in rate-sensitive sectors until Wednesday's data clears the air."
 }
