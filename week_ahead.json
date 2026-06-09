@@ -1,15 +1,16 @@
 {
-  "updated": "2026-06-08",
-  "mode": "week",
-  "headline": "Inflation data week arrives as Iran ceasefire holds and rate-hike odds top 57%. May CPI and PPI are the fulcrum — hot prints reopen the hike trade.",
-  "sub": "May nonfarm payrolls blew past estimates at 172K, sending the 10-year yield to 4.54% and sparking a 'good news is bad news' selloff that dragged the S&P 500 back from its record 7,600 close. The Iran war's energy shock pushed April CPI to near two-year highs, and this week's May reads will determine whether pipeline inflation is easing or entrenching. New Fed Chair Kevin Warsh's first press conference lands June 17 — this week's data will write his opening script.",
+  "updated": "2026-06-09",
+  "mode": "close",
+  "headline": "BREAKING: US launches new strikes on Iran near Strait of Hormuz — ceasefire collapses as inflation week begins.",
+  "sub": "The US military launched fresh strikes against Iran at 5 PM EDT Tuesday (Jun 9) in retaliation for Iran downing a US Apache helicopter off Oman. Explosions hit Bandar Abbas and Qeshm — ports flanking the Strait of Hormuz where shipping is already at 5% of pre-war levels. Oil spiked and the Nasdaq shed 3.5% intraday before recovering to -1%. With May CPI landing Wednesday and Fed rate-hike odds already at 57%, escalation into the world's most critical oil chokepoint is the worst possible backdrop. Stagflation risk is back at maximum — energy re-shock meets a hawkish Fed debut from Warsh on June 17.",
   "events": [
-    { "text": "May CPI (Wed Jun 10)", "detail": "Most critical inflation print of 2026 — energy base effects from Iran war shock in focus; April print was highest in nearly two years", "tag": "HOT", "color": "red" },
-    { "text": "Strait of Hormuz — Ceasefire Watch", "detail": "Uneasy truce holds but shipping at just 5% of pre-war levels; any escalation re-spikes crude and stagflation risk", "tag": "HOT", "color": "red" },
-    { "text": "May PPI (Thu Jun 11)", "detail": "Producer prices complete the inflation picture ahead of Warsh's June 17 debut presser", "tag": "KEY", "color": "purple" },
-    { "text": "ECB Rate Decision (Thu Jun 11)", "detail": "First major central bank move since Iran ceasefire; guidance sets EUR/USD tone and signals global policy direction", "tag": "KEY", "color": "purple" },
-    { "text": "Fed Rate-Hike Odds (57%)", "detail": "Post-payrolls repricing — watch 10-year yield for further pressure on rate-sensitive growth stocks", "tag": "WATCH", "color": "yellow" },
-    { "text": "UMich Consumer Sentiment (Fri Jun 12)", "detail": "Household inflation expectations running hotter than forecaster models; a beat here adds to hike fears", "tag": "WATCH", "color": "yellow" }
+    { "text": "BREAKING — US Strikes Iran (Strait of Hormuz)", "detail": "US launched retaliatory strikes Jun 9 after Iran downed a US Apache helicopter off Oman. Explosions at Bandar Abbas and Qeshm — directly on the Strait of Hormuz. Ceasefire has collapsed. Crude oil spike and shipping disruption risk are acute. Nasdaq -3.5% intraday.", "tag": "HOT", "color": "red" },
+    { "text": "May CPI (Wed Jun 10)", "detail": "Most critical inflation print of 2026 — energy base effects from Iran war shock in focus; April print was highest in nearly two years. Now even more consequential with fresh Iran escalation re-spiking oil.", "tag": "HOT", "color": "red" },
+    { "text": "Strait of Hormuz — Ceasefire Collapsed", "detail": "Ceasefire broken — US strikes hit ports flanking the strait. Shipping at just 5% of pre-war levels; further disruption could fully close the chokepoint and send crude to $120+.", "tag": "HOT", "color": "red" },
+    { "text": "May PPI (Thu Jun 11)", "detail": "Producer prices complete the inflation picture ahead of Warsh's June 17 debut presser — energy shock from new strikes will show in the pipeline.", "tag": "KEY", "color": "purple" },
+    { "text": "ECB Rate Decision (Thu Jun 11)", "detail": "First major central bank move since Iran ceasefire; guidance sets EUR/USD tone and signals global policy direction — now complicated by fresh escalation.", "tag": "KEY", "color": "purple" },
+    { "text": "Fed Rate-Hike Odds (57%)", "detail": "Post-payrolls repricing — watch 10-year yield for further pressure on rate-sensitive growth stocks. New Iran strikes add upside inflation risk.", "tag": "WATCH", "color": "yellow" },
+    { "text": "UMich Consumer Sentiment (Fri Jun 12)", "detail": "Household inflation expectations running hotter than forecaster models; renewed Iran escalation will weigh on confidence.", "tag": "WATCH", "color": "yellow" }
   ],
-  "bias": "Tactically cautious into the inflation prints. <strong>Hot CPI = yields spike, growth sells off hard; cool CPI = relief rally, tech and semis lead.</strong> Asymmetric risk is to the upside on yields given the Strait of Hormuz energy overhang — fade strength in rate-sensitive sectors until Wednesday's data clears the air."
+  "bias": "Maximum caution into Wednesday CPI. <strong>Fresh US strikes near the Strait of Hormuz have broken the ceasefire and reignited the energy shock risk — this is the worst combo for inflation data week.</strong> Hot CPI + oil spike = yields blow out, growth and semis crater; even a cool CPI print may be muted by war premium in crude. Avoid rate-sensitive longs ahead of Warsh's June 17 debut. Energy names (XLE, OXY) and gold are the tactical hedges. Do not fade oil strength until the Strait situation stabilizes."
 }
