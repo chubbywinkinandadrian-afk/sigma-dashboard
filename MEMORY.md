@@ -58,19 +58,35 @@ under hard constraints from the user:
 
 Run it: `cd heirloom && npm install && npm run samples && npm start` → localhost:3000
 
+## Bigger picture (decided 2026-06-10, after the build)
+
+User upgraded the goal to **$100K by Dec 31, 2026**. Agreed strategy: run a **micro-product
+studio**, not a single product. (1) Heirloom launches as rep one and as the data engine;
+(2) concepts 2/3 ship as ~4-day reskins of the same skeleton; 30-day kill/scale gates
+($1K total or a 100K-view clip, else kill); (3) winners get a **$99–149 high ticket**
+("whole shoebox" bulk tier) — the key move for the $100K math; (4) Pinterest + SEO for
+winners only; (5) **Q4 is the core bet**: all three concepts are Christmas-gift products,
+Nov–Dec should be ~half the annual number; self-serve paid ads only on funnels with proven
+conversion. Honest median: $25–50K by Dec 31 exiting at $5–15K/month; $100K is top-decile.
+
 ## State / next steps (in order)
 
-1. **Screenshots for the user** — they asked to "see how it is". Playwright/Chromium
-   install FAILED in the old session's container (likely network policy or missing system
-   deps — check). Alternative: user runs it locally, or try `npx playwright install chromium`
-   again / system chromium via apt.
-2. Replace placeholder samples with a real PD photo pair (run one through the real provider)
-3. Replicate: set token, verify `REPLICATE_MODEL` (default `flux-kontext-apps/restore-image`)
-   still exists/is best, test on 5–10 damaged photos
-4. Lemon Squeezy: create store + 2 products, set checkout env vars, one real test purchase
-5. Deploy (Render/Railway), domain, HTTPS
-6. Content engine: 2–3 before/after clips/day from PD archive photos; day-7 traction gate →
-   if dead, reskin same skeleton to concept 2 (kid's drawings)
+DONE 2026-06-10: skeleton verified end-to-end; screenshots delivered to user (via
+`wkhtmltoimage` — Playwright/Chrome CDNs are blocked by this env's network policy, apt
+chromium is a snap stub; ffmpeg + wkhtmltopdf install fine via apt); **clip engine built**:
+`heirloom/scripts/make-clip.mjs` renders a 9:16 MP4 (hold→wipe→CTA card) from any
+before/after pair — first demo clip delivered to user.
+
+Remaining — items 1–4 need the USER's accounts (agent cannot do them):
+1. Replicate account + token; verify `REPLICATE_MODEL` (default `flux-kontext-apps/restore-image`)
+   is still the best restoration app; test on 5–10 real damaged photos
+2. Lemon Squeezy store + 2 products (license keys ON: $9/limit 1, $19/limit 5), set the two
+   checkout-URL env vars, one real test purchase
+3. Host (Render/Railway) + domain (try heirloom.photos / getheirloom.com) + env vars
+4. TikTok/IG/YT/X accounts for posting; 2–3 clips/day via make-clip.mjs
+5. Agent-side once token exists: replace placeholder samples with a real PD restoration pair
+   (Library of Congress source → run through real provider → update landing + first clips)
+6. Day-7 traction gate → if dead, reskin to concept 2 (kid's drawings)
 
 ## Repo facts
 
