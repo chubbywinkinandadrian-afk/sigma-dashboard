@@ -80,7 +80,7 @@ class RegimeSwitchQC(QCAlgorithm):
 
         # indicators updated manually so channel values can exclude the
         # forming bar (shift(1) semantics of the reference implementation)
-        self.atr = AverageTrueRange(self.ATR_P, MovingAverageType.WILDERS)
+        self._atr = AverageTrueRange(self.ATR_P, MovingAverageType.WILDERS)
         self.ema_f = ExponentialMovingAverage(self.EMA_F_P)
         self.ema_s = ExponentialMovingAverage(self.EMA_S_P)
         self.hi_q = deque(maxlen=self.T_ENTRY)    # prior highs
@@ -107,7 +107,7 @@ class RegimeSwitchQC(QCAlgorithm):
         close_up = self.prev_close is not None and close > self.prev_close
 
         # -- features that INCLUDE the current bar (match pandas rolling at t)
-        self.atr.update(bar)
+        self._atr.update(bar)
         self.ema_f.update(bar.end_time, close)
         self.ema_s.update(bar.end_time, close)
         if self.prev_close:
@@ -121,12 +121,12 @@ class RegimeSwitchQC(QCAlgorithm):
                 self.ew_var = (1 - a) * (self.ew_var + a * d * d)
         self.mr_q.append(close)
 
-        ready = (self.atr.is_ready and self.ema_s.is_ready
+        ready = (self._atr.is_ready and self.ema_s.is_ready
                  and len(self.hi_q) == self.T_ENTRY and len(self.mr_q) == self.MR_WIN
                  and self.ew_var is not None)
 
         if ready:
-            atr = self.atr.current.value
+            atr = self._atr.current.value
             ema_f, ema_s = self.ema_f.current.value, self.ema_s.current.value
 
             # regime gate with hysteresis
