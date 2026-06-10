@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Heirloom — Bring your family photos back to life</title>
+  <meta name="description" content="One-click AI restoration for old family photos. Repair tears, fading and scratches, recover color. Free preview — $9 full resolution. No app, no account.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-row">
+    <a class="brand" href="/">
+      <img src="/favicon.svg" alt="" width="28" height="28">
+      <span>Heirloom</span>
+    </a>
+    <nav class="header-nav">
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a class="btn btn-small" href="#restore">Restore a photo</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">AI photo restoration</p>
+        <h1>Bring your family photos back to life.</h1>
+        <p class="lede">Repair tears, fading and scratches — even return color to black&nbsp;&amp;&nbsp;white — in under a minute. Preview free. No app, no account, nothing to learn.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#restore">Restore a photo — free preview</a>
+          <a class="btn btn-ghost" href="#pricing">$9 per photo</a>
+        </div>
+        <p class="trust-row">Photos auto-delete after 60 minutes &middot; never used to train AI &middot; full refund if you don't love it</p>
+      </div>
+      <div class="hero-demo">
+        <div class="ba" id="hero-slider">
+          <img class="ba-after" src="/sample-after.jpg" alt="Restored photograph, repaired and in color">
+          <div class="ba-before-wrap"><img class="ba-before" src="/sample-before.jpg" alt="Original photograph, faded and scratched"></div>
+          <div class="ba-handle" aria-hidden="true"><span>&#8596;</span></div>
+          <span class="ba-label ba-label-before">Before</span>
+          <span class="ba-label ba-label-after">After</span>
+        </div>
+        <p class="hero-demo-caption">Drag the handle — a sample restoration.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool" id="restore">
+    <div class="wrap wrap-narrow">
+      <h2>Restore your photo</h2>
+
+      <div class="panel" id="panel-upload">
+        <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload a photo to restore">
+          <div class="dropzone-art">&#10047;</div>
+          <p class="dropzone-title">Drag a photo here, or tap to choose</p>
+          <p class="dropzone-sub">JPEG or PNG &middot; a phone photo of the printed picture works great</p>
+        </div>
+        <input type="file" id="file-input" accept="image/*" hidden>
+        <p class="panel-foot">Just looking? <a href="#hero-slider" id="see-sample">See the sample above</a>.</p>
+      </div>
+
+      <div class="panel hidden" id="panel-processing" aria-live="polite">
+        <div class="shimmer-frame"><div class="shimmer"></div></div>
+        <p class="processing-status" id="processing-status">Reading your photo&hellip;</p>
+      </div>
+
+      <div class="panel hidden" id="panel-result">
+        <div class="result-head">
+          <h3 id="result-title">Your restoration is ready</h3>
+          <span class="chip" id="result-chip">Watermarked preview</span>
+        </div>
+        <div class="ba" id="result-slider">
+          <img class="ba-after" id="result-after" src="" alt="Restored photo">
+          <div class="ba-before-wrap"><img class="ba-before" id="result-before" src="" alt="Your original photo"></div>
+          <div class="ba-handle" aria-hidden="true"><span>&#8596;</span></div>
+          <span class="ba-label ba-label-before">Before</span>
+          <span class="ba-label ba-label-after">After</span>
+        </div>
+
+        <div class="unlock" id="unlock-box">
+          <p class="unlock-lede" id="unlock-lede">Love it? Download the full-resolution file — yours forever.</p>
+          <div class="unlock-actions" id="unlock-actions"></div>
+          <form class="license-form hidden" id="license-form">
+            <input type="text" id="license-input" placeholder="Paste the license key from your email" autocomplete="off">
+            <button type="submit" class="btn btn-primary">Unlock</button>
+          </form>
+          <p class="unlock-error hidden" id="unlock-error"></p>
+          <p class="unlock-note" id="unlock-note">Your photo is deleted from our servers after 60 minutes, unlocked or not.</p>
+        </div>
+
+        <div class="done-actions hidden" id="done-actions">
+          <a class="btn btn-primary" id="download-btn" href="#" download>Download full resolution</a>
+          <button class="btn btn-ghost" id="restart-btn" type="button">Restore another photo</button>
+        </div>
+      </div>
+
+      <p class="tool-error hidden" id="tool-error"></p>
+    </div>
+  </section>
+
+  <section class="steps">
+    <div class="wrap">
+      <h2>How it works</h2>
+      <ol class="steps-grid">
+        <li><span class="step-num">1</span><h3>Upload the photo</h3><p>Scan it, or just take a phone photo of the print. Creases, fading, spots — bring it as it is.</p></li>
+        <li><span class="step-num">2</span><h3>AI repairs the damage</h3><p>Tears mended, scratches removed, faded tones recovered — and black&nbsp;&amp;&nbsp;white returned to color.</p></li>
+        <li><span class="step-num">3</span><h3>Preview free, then download</h3><p>You see the result before paying a cent. Only pay for the full-resolution keepsake.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="pricing" id="pricing">
+    <div class="wrap">
+      <h2>Simple, one-time pricing</h2>
+      <p class="pricing-lede">No subscription. No account. Pay only for the photos you keep.</p>
+      <div class="price-grid">
+        <div class="price-card">
+          <h3>One photo</h3>
+          <p class="price">$9</p>
+          <ul>
+            <li>Full-resolution download</li>
+            <li>Free preview first</li>
+            <li>Yours forever</li>
+          </ul>
+          <a class="btn btn-ghost" href="#restore">Restore a photo</a>
+        </div>
+        <div class="price-card price-card-featured">
+          <p class="badge">Most popular</p>
+          <h3>Five photos</h3>
+          <p class="price">$19</p>
+          <ul>
+            <li>Everything in One photo</li>
+            <li>Use any time — keys don't expire</li>
+            <li>Perfect for gifts &amp; anniversaries</li>
+          </ul>
+          <a class="btn btn-primary" href="#restore">Restore your photos</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="faq" id="faq">
+    <div class="wrap wrap-narrow">
+      <h2>Questions, answered</h2>
+      <details>
+        <summary>What kinds of damage can it fix?</summary>
+        <p>Fading and yellowing, scratches and dust, creases and small tears, water spots, and soft focus. It can also colorize black &amp; white photos. Severely missing areas (a torn-away face) may not fully recover.</p>
+      </details>
+      <details>
+        <summary>Do I need a scanner?</summary>
+        <p>No. A phone photo of the print works well — lay the photo flat near a window, avoid glare, and fill the frame.</p>
+      </details>
+      <details>
+        <summary>What happens to my photos?</summary>
+        <p>They're processed, then automatically deleted from our servers after 60 minutes — purchased or not. They are never used to train AI models and never shared.</p>
+      </details>
+      <details>
+        <summary>What if I don't like the result?</summary>
+        <p>You see a preview before paying, and if a purchased photo still disappoints, reply to your receipt for a full refund — no questions asked.</p>
+      </details>
+      <details>
+        <summary>What resolution do I get?</summary>
+        <p>The full-resolution restored file, print-ready as JPEG. Frame it, gift it, or share it with the whole family.</p>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p><strong>Heirloom</strong> — made for the photos in your shoebox.</p>
+    <p class="fine">No account &middot; photos deleted after 60 minutes &middot; never used for AI training &middot; &copy; 2026 Heirloom</p>
+  </div>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

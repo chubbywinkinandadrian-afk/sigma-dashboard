@@ -1,0 +1,17 @@
+{
+  "name": "heirloom",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "One-click restoration for old family photos. Upload, preview free, pay to download full resolution.",
+  "scripts": {
+    "start": "node server.mjs",
+    "samples": "node scripts/make-samples.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "jimp": "^0.22.12"
+  }
+}
