@@ -95,75 +95,226 @@ namespace SAO.EditorTools
         [MenuItem("Tools/SAO/2. Build Inn Greybox (Town of Beginnings)", false, 2)]
         public static void BuildInn()
         {
-            CreateMaterials();   // idempotent
+            CreateMaterials();   // idempotent; dialogs + aborts if the shaders are missing
+            if (Shader.Find("SAO/Toon") == null) return;
+
+            // ---- idempotency: tear down previous builds before rebuilding ----
+            // (active objects anywhere in the hierarchy, by name)
+            GameObject stale;
+            while ((stale = GameObject.Find("Inn_TownOfBeginnings")) != null)
+                Undo.DestroyObjectImmediate(stale);
+            // The sun was a scene-root object in older builds; it lives under
+            // Lighting now, so absorb strays from earlier runs too.
+            while ((stale = GameObject.Find("Sun_LateAfternoon")) != null)
+                Undo.DestroyObjectImmediate(stale);
+            // ...and inactive leftovers at the scene root.
+            foreach (var go in SceneManager.GetActiveScene().GetRootGameObjects())
+                if (go.name == "Inn_TownOfBeginnings" || go.name == "Sun_LateAfternoon")
+                    Undo.DestroyObjectImmediate(go);
 
             var root = new GameObject("Inn_TownOfBeginnings");
             Undo.RegisterCreatedObjectUndo(root, "Build Inn Greybox");
-            Transform t = root.transform;
 
-            // ---- shell (interior 12 x 3.4 x 9 m, origin = floor center) ----
-            Box("Floor",         new Vector3(0f, -0.10f, 0f),    new Vector3(12.6f, 0.2f, 9.6f), "Stone_Floor", t);
-            Box("Ceiling",       new Vector3(0f,  3.50f, 0f),    new Vector3(12.6f, 0.2f, 9.6f), "Wood_Dark",   t);
-            Box("Wall_N",        new Vector3(0f,  1.70f, 4.65f), new Vector3(12.6f, 3.4f, 0.3f), "Plaster",     t);
-            Box("Wall_E",        new Vector3(6.45f, 1.70f, 0f),  new Vector3(0.3f, 3.4f, 9.6f),  "Plaster",     t);
-            Box("Wall_W",        new Vector3(-6.45f, 1.70f, 0f), new Vector3(0.3f, 3.4f, 9.6f),  "Plaster",     t);
-            // south wall is split to leave a 1.4 m doorway in the middle
-            Box("Wall_S_Left",   new Vector3(-3.5f, 1.70f, -4.65f), new Vector3(5.6f, 3.4f, 0.3f), "Plaster", t);
-            Box("Wall_S_Right",  new Vector3(3.5f, 1.70f, -4.65f),  new Vector3(5.6f, 3.4f, 0.3f), "Plaster", t);
-            Box("Wall_S_Lintel", new Vector3(0f, 2.85f, -4.65f),    new Vector3(1.4f, 1.1f, 0.3f), "Plaster", t);
+            Transform architecture = Group(root.transform, "Architecture");
+            Transform furniture    = Group(root.transform, "Furniture");
+            Transform lighting     = Group(root.transform, "Lighting");
+            Transform spawnPoints  = Group(root.transform, "SpawnPoints");
+            Transform atmosphere   = Group(root.transform, "Atmosphere");
 
-            // ---- door frame -------------------------------------------------
-            Box("DoorJamb_L",  new Vector3(-0.78f, 1.15f, -4.65f), new Vector3(0.18f, 2.3f, 0.4f),  "Wood_Dark", t);
-            Box("DoorJamb_R",  new Vector3(0.78f, 1.15f, -4.65f),  new Vector3(0.18f, 2.3f, 0.4f),  "Wood_Dark", t);
-            Box("DoorHeader",  new Vector3(0f, 2.39f, -4.65f),     new Vector3(1.74f, 0.18f, 0.4f), "Wood_Dark", t);
+            BuildShell(architecture);
+            BuildTimberFrame(architecture);
+            BuildFireplaceMasonry(architecture);
+            BuildFurniture(furniture);
+            BuildInnLights(lighting);
+            BuildAtmosphere(atmosphere);
 
-            // ---- structure: posts + beams (chunky storybook proportions) ---
-            foreach (float x in new[] { -3f, 3f })
-                foreach (float z in new[] { -1.5f, 1.5f })
-                    Box($"Post_{x}_{z}", new Vector3(x, 1.7f, z), new Vector3(0.25f, 3.4f, 0.25f), "Wood_Dark", t);
-
-            foreach (float x in new[] { -3f, 0f, 3f })
-                Box($"Beam_Cross_{x}", new Vector3(x, 3.27f, 0f), new Vector3(0.3f, 0.25f, 9.0f), "Wood_Dark", t);
-
-            Box("Beam_Ridge", new Vector3(0f, 3.02f, 0f), new Vector3(12.2f, 0.25f, 0.3f), "Wood_Dark", t);
-
-            // ---- bar counter along the north wall ---------------------------
-            Box("Bar_Body",  new Vector3(0f, 0.50f, 3.6f), new Vector3(4.0f, 1.0f, 0.6f),  "Wood_Dark", t);
-            Box("Bar_Top",   new Vector3(0f, 1.05f, 3.6f), new Vector3(4.4f, 0.1f, 0.8f),  "Wood_Mid",  t);
-            Box("Bar_Shelf", new Vector3(0f, 2.00f, 4.4f), new Vector3(3.6f, 0.08f, 0.35f), "Wood_Mid", t);
-
-            // ---- tables + stools --------------------------------------------
-            BuildTable(t, new Vector3(-3.4f, 0f, -2.7f), 0);
-            BuildTable(t, new Vector3(3.4f, 0f, -2.7f), 1);
-            BuildTable(t, new Vector3(-3.6f, 0f, 2.3f), 2);
-
-            // ---- fireplace on the east wall ---------------------------------
-            Box("Fireplace_Body",    new Vector3(5.80f, 1.10f, 2.6f), new Vector3(1.0f, 2.2f, 1.6f), "Stone_Dark", t);
-            Box("Fireplace_Opening", new Vector3(5.55f, 0.55f, 2.6f), new Vector3(0.6f, 1.1f, 1.0f), "Charcoal",   t);
-            Box("Fireplace_Embers",  new Vector3(5.45f, 0.16f, 2.6f), new Vector3(0.5f, 0.16f, 0.7f), "Ember",     t);
-            PointLight(t, "FireLight", new Vector3(5.2f, 0.8f, 2.6f), new Color(1f, 0.55f, 0.25f), 1.6f, 7f);
-
-            // ---- lanterns (warm pools via the ForwardAdd toon pass) ---------
-            Lantern(t, new Vector3(3f, 2.35f, 1.2f));
-            Lantern(t, new Vector3(-3f, 2.35f, -1.2f));
-            Lantern(t, new Vector3(0f, 2.50f, 3.4f));   // over the bar
-
-            // ---- windows on the west (sun) wall -----------------------------
-            BuildWindow(t, new Vector3(-6.26f, 1.9f, -2.0f));
-            BuildWindow(t, new Vector3(-6.26f, 1.9f, 2.0f));
-
-            // ---- dressing ----------------------------------------------------
-            Box("Rug", new Vector3(0f, 0.012f, -1.2f), new Vector3(2.6f, 0.024f, 1.8f), "Fabric_Red", t);
-
-            var spawn = new GameObject("PlayerSpawn");
-            spawn.transform.SetParent(t, false);
+            // Spawn faces +Z: doorway at your back, bar straight ahead.
+            var spawn = new GameObject("PlayerSpawn_Inn");
+            spawn.transform.SetParent(spawnPoints, false);
             spawn.transform.localPosition = new Vector3(0f, 0.05f, -3.4f);
 
-            SetupInnLighting();
+            ApplyInnRenderSettings();
+            DisableExtraDirectionalLights(root.transform);
 
             Selection.activeGameObject = root;
             MarkDirty();
-            Debug.Log("[SAO] Inn greybox built. Run 'Tools > SAO > 3. Build FPS Player Rig', then save this scene as 'TownOfBeginnings'.");
+
+            int objectCount = root.GetComponentsInChildren<Transform>(true).Length;
+            Debug.Log($"[SAO] Inn greybox built ({objectCount} objects). " +
+                      "Next: 'Tools > SAO > 3. Build FPS Player Rig', then save the scene as 'TownOfBeginnings'.");
+        }
+
+        // ---- architecture: floor/ceiling/walls with REAL window openings ----
+        private static void BuildShell(Transform parent)
+        {
+            // Interior 12 x 9 m, 3.4 m ceiling; origin = floor center.
+            // Primitives keep their default BoxColliders, so the room is
+            // walkable as soon as the player rig exists.
+            Box("Floor",   new Vector3(0f, -0.10f, 0f), new Vector3(12.6f, 0.2f, 9.6f), "Stone_Floor", parent);
+            Box("Ceiling", new Vector3(0f,  3.50f, 0f), new Vector3(12.6f, 0.2f, 9.6f), "Wood_Dark",   parent);
+
+            Box("Wall_N", new Vector3(0f, 1.70f, 4.65f), new Vector3(12.6f, 3.4f, 0.3f), "Plaster", parent);
+            Box("Wall_E", new Vector3(6.45f, 1.70f, 0f), new Vector3(0.3f, 3.4f, 9.6f),  "Plaster", parent);
+
+            // West wall is segmented around two REAL openings (z -2.5..-1.5 and
+            // 1.5..2.5, sill 1.25 / head 2.55) so the low sun genuinely enters
+            // and paints shafts on the floor — the anime money shot.
+            Box("Wall_W_South",  new Vector3(-6.45f, 1.700f, -3.65f), new Vector3(0.3f, 3.40f, 2.3f), "Plaster", parent);
+            Box("Wall_W_Mid",    new Vector3(-6.45f, 1.700f,  0.00f), new Vector3(0.3f, 3.40f, 3.0f), "Plaster", parent);
+            Box("Wall_W_North",  new Vector3(-6.45f, 1.700f,  3.65f), new Vector3(0.3f, 3.40f, 2.3f), "Plaster", parent);
+            Box("Wall_W_BelowA", new Vector3(-6.45f, 0.625f, -2.00f), new Vector3(0.3f, 1.25f, 1.0f), "Plaster", parent);
+            Box("Wall_W_AboveA", new Vector3(-6.45f, 2.975f, -2.00f), new Vector3(0.3f, 0.85f, 1.0f), "Plaster", parent);
+            Box("Wall_W_BelowB", new Vector3(-6.45f, 0.625f,  2.00f), new Vector3(0.3f, 1.25f, 1.0f), "Plaster", parent);
+            Box("Wall_W_AboveB", new Vector3(-6.45f, 2.975f,  2.00f), new Vector3(0.3f, 0.85f, 1.0f), "Plaster", parent);
+
+            BuildWindowAssembly(parent, -2.0f);
+            BuildWindowAssembly(parent,  2.0f);
+
+            // South wall split around a 1.4 m doorway.
+            Box("Wall_S_Left",   new Vector3(-3.5f, 1.70f, -4.65f), new Vector3(5.6f, 3.4f, 0.3f), "Plaster", parent);
+            Box("Wall_S_Right",  new Vector3(3.5f, 1.70f, -4.65f),  new Vector3(5.6f, 3.4f, 0.3f), "Plaster", parent);
+            Box("Wall_S_Lintel", new Vector3(0f, 2.85f, -4.65f),    new Vector3(1.4f, 1.1f, 0.3f), "Plaster", parent);
+
+            // Door frame + a leaf standing ajar (hinged on the left jamb).
+            // At -65 degrees the clear width is ~0.85 m — plenty for the
+            // CharacterController's 0.35 m radius.
+            Box("DoorJamb_L", new Vector3(-0.78f, 1.15f, -4.65f), new Vector3(0.18f, 2.3f, 0.4f),  "Wood_Dark", parent);
+            Box("DoorJamb_R", new Vector3(0.78f, 1.15f, -4.65f),  new Vector3(0.18f, 2.3f, 0.4f),  "Wood_Dark", parent);
+            Box("DoorHeader", new Vector3(0f, 2.39f, -4.65f),     new Vector3(1.74f, 0.18f, 0.4f), "Wood_Dark", parent);
+
+            var hinge = new GameObject("Door_Hinge");
+            hinge.transform.SetParent(parent, false);
+            hinge.transform.localPosition = new Vector3(-0.70f, 1.15f, -4.50f);
+            hinge.transform.localRotation = Quaternion.Euler(0f, -65f, 0f);   // swung into the room
+            Box("Door_Leaf",    new Vector3(0.65f, 0f, 0f),    new Vector3(1.30f, 2.24f, 0.07f), "Wood_Mid", hinge.transform);
+            Ball("Door_Handle", new Vector3(1.18f, 0f, 0.07f), new Vector3(0.07f, 0.07f, 0.07f), "Brass", hinge.transform);
+
+            // Baseboard trim — grounds the walls; cheap, clean-anime detail.
+            Box("Trim_Base_N",  new Vector3(0f, 0.06f, 4.47f),     new Vector3(12.0f, 0.12f, 0.06f), "Wood_Dark", parent);
+            Box("Trim_Base_E",  new Vector3(6.27f, 0.06f, 0f),     new Vector3(0.06f, 0.12f, 9.0f),  "Wood_Dark", parent);
+            Box("Trim_Base_W",  new Vector3(-6.27f, 0.06f, 0f),    new Vector3(0.06f, 0.12f, 9.0f),  "Wood_Dark", parent);
+            Box("Trim_Base_SL", new Vector3(-3.5f, 0.06f, -4.47f), new Vector3(5.6f, 0.12f, 0.06f),  "Wood_Dark", parent);
+            Box("Trim_Base_SR", new Vector3(3.5f, 0.06f, -4.47f),  new Vector3(5.6f, 0.12f, 0.06f),  "Wood_Dark", parent);
+        }
+
+        private static void BuildWindowAssembly(Transform parent, float zCenter)
+        {
+            var w = new GameObject("Window_" + (zCenter < 0f ? "A" : "B"));
+            w.transform.SetParent(parent, false);
+            w.transform.localPosition = new Vector3(-6.45f, 1.90f, zCenter);
+            Transform t = w.transform;
+
+            // The glowing pane sits IN the opening. Shadow casting is disabled
+            // so the directional light passes through it onto the floor while
+            // the pane itself still reads as a lit window (and feeds bloom).
+            var pane = Box("Pane", Vector3.zero, new Vector3(0.10f, 1.30f, 1.00f), "Window_SunGlow", t);
+            pane.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+
+            Box("Muntin_V", new Vector3(0.08f, 0f, 0f), new Vector3(0.05f, 1.30f, 0.08f), "Wood_Dark", t);
+            Box("Muntin_H", new Vector3(0.08f, 0f, 0f), new Vector3(0.05f, 0.08f, 1.00f), "Wood_Dark", t);
+
+            // Frame trim + a protruding sill.
+            Box("Frame_L",   new Vector3(0.08f, 0f, -0.53f), new Vector3(0.14f, 1.46f, 0.10f), "Wood_Dark", t);
+            Box("Frame_R",   new Vector3(0.08f, 0f, 0.53f),  new Vector3(0.14f, 1.46f, 0.10f), "Wood_Dark", t);
+            Box("Frame_Top", new Vector3(0.08f, 0.69f, 0f),  new Vector3(0.14f, 0.10f, 1.16f), "Wood_Dark", t);
+            Box("Sill",      new Vector3(0.13f, -0.69f, 0f), new Vector3(0.26f, 0.08f, 1.25f), "Wood_Mid",  t);
+        }
+
+        private static void BuildTimberFrame(Transform parent)
+        {
+            // Chunky storybook proportions: ~30% thicker than realistic timber
+            // so the silhouettes survive cel shading.
+            foreach (float x in new[] { -3f, 3f })
+                foreach (float z in new[] { -1.5f, 1.5f })
+                    Box($"Post_{x}_{z}", new Vector3(x, 1.7f, z), new Vector3(0.25f, 3.4f, 0.25f), "Wood_Dark", parent);
+
+            foreach (float x in new[] { -3f, 0f, 3f })
+                Box($"Beam_Cross_{x}", new Vector3(x, 3.27f, 0f), new Vector3(0.3f, 0.25f, 9.0f), "Wood_Dark", parent);
+
+            Box("Beam_Ridge", new Vector3(0f, 3.02f, 0f), new Vector3(12.2f, 0.25f, 0.3f), "Wood_Dark", parent);
+        }
+
+        private static void BuildFireplaceMasonry(Transform parent)
+        {
+            Box("Fireplace_Body",    new Vector3(5.80f, 1.10f, 2.6f), new Vector3(1.0f, 2.2f, 1.6f),  "Stone_Dark", parent);
+            Box("Fireplace_Opening", new Vector3(5.55f, 0.55f, 2.6f), new Vector3(0.6f, 1.1f, 1.0f),  "Charcoal",   parent);
+            Box("Fireplace_Breast",  new Vector3(5.90f, 2.95f, 2.6f), new Vector3(0.8f, 1.0f, 1.3f),  "Stone_Dark", parent);
+            Box("Fireplace_Mantel",  new Vector3(5.45f, 2.30f, 2.6f), new Vector3(0.6f, 0.10f, 1.9f), "Wood_Mid",   parent);
+            Box("Fireplace_Hearth",  new Vector3(5.15f, 0.03f, 2.6f), new Vector3(1.2f, 0.06f, 1.8f), "Stone_Dark", parent);
+        }
+
+        private static readonly Vector3[] InnTablePositions =
+        {
+            new Vector3(-3.4f, 0f, -2.7f),
+            new Vector3(3.4f, 0f, -2.7f),
+            new Vector3(-3.6f, 0f, 2.3f),
+        };
+
+        private static void BuildFurniture(Transform parent)
+        {
+            Box("Bar_Body",  new Vector3(0f, 0.50f, 3.6f), new Vector3(4.0f, 1.0f, 0.6f),   "Wood_Dark", parent);
+            Box("Bar_Top",   new Vector3(0f, 1.05f, 3.6f), new Vector3(4.4f, 0.1f, 0.8f),   "Wood_Mid",  parent);
+            Box("Bar_Shelf", new Vector3(0f, 2.00f, 4.4f), new Vector3(3.6f, 0.08f, 0.35f), "Wood_Mid",  parent);
+
+            Cyl("BarStool_L", new Vector3(-1.2f, 0.325f, 2.9f), new Vector3(0.34f, 0.325f, 0.34f), "Wood_Mid", parent);
+            Cyl("BarStool_R", new Vector3(1.2f, 0.325f, 2.9f),  new Vector3(0.34f, 0.325f, 0.34f), "Wood_Mid", parent);
+
+            for (int i = 0; i < InnTablePositions.Length; i++)
+                BuildTable(parent, InnTablePositions[i], i);
+
+            Box("Rug", new Vector3(0f, 0.012f, -1.2f), new Vector3(2.6f, 0.024f, 1.8f), "Fabric_Red", parent);
+        }
+
+        private static void BuildInnLights(Transform parent)
+        {
+            // Key light: late-afternoon sun raking in through the west windows.
+            var sunGo = new GameObject("Sun_LateAfternoon");
+            sunGo.transform.SetParent(parent, false);
+            sunGo.transform.rotation = Quaternion.Euler(26f, 96f, 0f);
+            var sun = sunGo.AddComponent<Light>();
+            sun.type = LightType.Directional;
+            sun.color = new Color(1f, 0.83f, 0.62f);
+            sun.intensity = 1.15f;
+            sun.shadows = LightShadows.Soft;
+            sun.shadowStrength = 0.85f;
+            RenderSettings.sun = sun;
+
+            // Lanterns: two on posts (with bracket arms), one hung over the bar.
+            Lantern(parent, new Vector3(3f, 2.35f, 1.2f));
+            Box("Lantern_Arm_A", new Vector3(3f, 2.52f, 1.34f), new Vector3(0.06f, 0.06f, 0.40f), "Wood_Dark", parent);
+            Lantern(parent, new Vector3(-3f, 2.35f, -1.2f));
+            Box("Lantern_Arm_B", new Vector3(-3f, 2.52f, -1.34f), new Vector3(0.06f, 0.06f, 0.40f), "Wood_Dark", parent);
+            Lantern(parent, new Vector3(0f, 2.50f, 3.4f));
+            Box("Lantern_Rod", new Vector3(0f, 3.04f, 3.4f), new Vector3(0.04f, 0.71f, 0.04f), "Brass", parent);
+
+            PointLight(parent, "FireLight", new Vector3(5.2f, 0.8f, 2.6f), new Color(1f, 0.55f, 0.25f), 1.6f, 7f);
+        }
+
+        private static void BuildAtmosphere(Transform parent)
+        {
+            // Emissive dressing lives here (future home of dust-mote particles).
+            Box("Fireplace_Embers", new Vector3(5.45f, 0.16f, 2.6f), new Vector3(0.5f, 0.16f, 0.7f), "Ember", parent);
+
+            // Unlit table candles: no extra point lights (pixel-light budget),
+            // just a faint emissive flame that catches the bloom pass.
+            foreach (Vector3 p in InnTablePositions)
+            {
+                Cyl("Candle", p + new Vector3(0f, 0.83f, 0f), new Vector3(0.05f, 0.05f, 0.05f), "Wood_Mid", parent);
+                Ball("Candle_Flame", p + new Vector3(0f, 0.91f, 0f), new Vector3(0.05f, 0.07f, 0.05f), "Lantern_Glass", parent);
+            }
+        }
+
+        private static void ApplyInnRenderSettings()
+        {
+            RenderSettings.ambientMode = AmbientMode.Flat;
+            // Cool violet fill against the warm key = the anime complement.
+            RenderSettings.ambientLight = new Color(0.36f, 0.38f, 0.52f);
+            // Deliberately NO fog indoors: a 12 m room gains no readable depth
+            // from it, and dense fog reads "smoky" — fights the clean look.
+            RenderSettings.fog = false;
+
+            var sky = FindMat("Sky_Floor1");
+            if (sky != null) RenderSettings.skybox = sky;
         }
 
         private static void BuildTable(Transform parent, Vector3 pos, int variant)
@@ -200,45 +351,6 @@ namespace SAO.EditorTools
             PointLight(t, "LanternLight", new Vector3(0f, -0.05f, 0f), new Color(1f, 0.72f, 0.42f), 1.25f, 5.5f);
         }
 
-        private static void BuildWindow(Transform parent, Vector3 pos)
-        {
-            var g = new GameObject("Window");
-            g.transform.SetParent(parent, false);
-            g.transform.localPosition = pos;
-            Transform t = g.transform;
-
-            Box("Pane",      Vector3.zero,                 new Vector3(0.06f, 1.30f, 1.00f), "Window_SunGlow", t);
-            Box("Muntin_V",  new Vector3(0.02f, 0f, 0f),   new Vector3(0.08f, 1.40f, 0.09f), "Wood_Dark", t);
-            Box("Muntin_H",  new Vector3(0.02f, 0f, 0f),   new Vector3(0.08f, 0.09f, 1.10f), "Wood_Dark", t);
-        }
-
-        private static void SetupInnLighting()
-        {
-            // Late-afternoon sun raking in through the west windows.
-            var sunGo = GameObject.Find("Sun_LateAfternoon");
-            if (sunGo == null)
-            {
-                sunGo = new GameObject("Sun_LateAfternoon");
-                Undo.RegisterCreatedObjectUndo(sunGo, "Sun");
-            }
-            var sun = sunGo.GetComponent<Light>();
-            if (sun == null) sun = sunGo.AddComponent<Light>();
-
-            sun.type = LightType.Directional;
-            sun.color = new Color(1f, 0.83f, 0.62f);
-            sun.intensity = 1.15f;
-            sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.85f;
-            sunGo.transform.rotation = Quaternion.Euler(26f, 96f, 0f);
-
-            RenderSettings.sun = sun;
-            RenderSettings.ambientMode = AmbientMode.Flat;
-            // Cool violet ambient against the warm key = the anime complement.
-            RenderSettings.ambientLight = new Color(0.36f, 0.38f, 0.52f);
-            RenderSettings.fog = false;
-            RenderSettings.skybox = M("Sky_Floor1");
-        }
-
         // ================================================================== //
         //  3. PLAYER RIG + HUD
         // ================================================================== //
@@ -257,7 +369,8 @@ namespace SAO.EditorTools
             DisableExtraCameras();
 
             Vector3 spawnPos = new Vector3(0f, 0.05f, -3.4f);
-            var marker = GameObject.Find("PlayerSpawn");
+            var marker = GameObject.Find("PlayerSpawn_Inn");
+            if (marker == null) marker = GameObject.Find("PlayerSpawn");   // pre-hierarchy builds
             if (marker != null) spawnPos = marker.transform.position;
 
             var player = new GameObject("Player");
@@ -414,7 +527,7 @@ namespace SAO.EditorTools
             RenderSettings.sun = sun;
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(0.30f, 0.28f, 0.45f);
-            RenderSettings.skybox = M("Sky_Menu");
+            RenderSettings.skybox = FindMat("Sky_Menu");
             RenderSettings.fog = true;                       // depth haze on the far side
             RenderSettings.fogMode = FogMode.Linear;
             RenderSettings.fogColor = new Color(0.79f, 0.52f, 0.47f);
@@ -574,6 +687,30 @@ namespace SAO.EditorTools
             }
         }
 
+        /// <summary>Creates an empty organizational child under a root.</summary>
+        private static Transform Group(Transform root, string name)
+        {
+            var g = new GameObject(name);
+            g.transform.SetParent(root, false);
+            return g.transform;
+        }
+
+        /// <summary>
+        /// Keeps exactly one key light: disables any active directional light
+        /// that is not under the given root (e.g. the default scene's
+        /// "Directional Light", or the menu scene's dusk sun).
+        /// </summary>
+        private static void DisableExtraDirectionalLights(Transform keepUnder)
+        {
+            foreach (var l in Object.FindObjectsOfType<Light>())
+            {
+                if (l.type != LightType.Directional) continue;
+                if (keepUnder != null && l.transform.IsChildOf(keepUnder)) continue;
+                l.gameObject.SetActive(false);
+                Debug.Log($"[SAO] Disabled extra directional light '{l.name}' so the inn keeps a single key light.");
+            }
+        }
+
         private static GameObject Prim(PrimitiveType type, string name, Vector3 localPos,
                                        Vector3 scale, string matName, Transform parent)
         {
@@ -582,7 +719,7 @@ namespace SAO.EditorTools
             go.transform.SetParent(parent, false);
             go.transform.localPosition = localPos;
             go.transform.localScale = scale;
-            var mat = M(matName);
+            var mat = FindMat(matName);
             if (mat != null) go.GetComponent<MeshRenderer>().sharedMaterial = mat;
             return go;
         }
@@ -611,7 +748,11 @@ namespace SAO.EditorTools
             return l;
         }
 
-        private static Material M(string name)
+        /// <summary>
+        /// Looks up a generated material in Assets/SAO_Generated/Materials,
+        /// creating the whole set on demand if it doesn't exist yet.
+        /// </summary>
+        private static Material FindMat(string name)
         {
             string path = MatFolder + "/" + name + ".mat";
             var m = AssetDatabase.LoadAssetAtPath<Material>(path);
