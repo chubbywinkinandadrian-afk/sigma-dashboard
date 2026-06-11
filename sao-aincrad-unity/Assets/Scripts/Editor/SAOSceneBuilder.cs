@@ -358,13 +358,15 @@ namespace SAO.EditorTools
         [MenuItem("Tools/SAO/3. Build FPS Player Rig", false, 3)]
         public static void BuildPlayer()
         {
-            var existing = Object.FindObjectOfType<FPSController>();
-            if (existing != null)
-            {
-                Debug.LogWarning("[SAO] A player rig already exists in this scene.");
-                Selection.activeGameObject = existing.gameObject;
-                return;
-            }
+            // Idempotency: tear down any existing player rig and its HUD canvas
+            // before rebuilding, so this can be re-run safely like BuildInn().
+            // Use Find (active objects) + GetRootGameObjects (catches inactive ones).
+            GameObject stale;
+            while ((stale = GameObject.Find("Player")) != null)
+                Undo.DestroyObjectImmediate(stale);
+            foreach (var go in SceneManager.GetActiveScene().GetRootGameObjects())
+                if (go.name == "Player" || go.name == "PlayerHUD")
+                    Undo.DestroyObjectImmediate(go);
 
             DisableExtraCameras();
 
