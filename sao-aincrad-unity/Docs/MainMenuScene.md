@@ -1,6 +1,6 @@
 # Main Menu Scene Setup
 
-Goal: a slow orbit around a cel-shaded Aincrad silhouette at dusk, gradient
+Goal: a slow orbit around a cel-shaded floating-citadel silhouette at dusk, gradient
 skybox, big clean title text, four buttons. All primitives, all replaceable.
 
 ## Fast path (recommended)
@@ -9,7 +9,7 @@ skybox, big clean title text, four buttons. All primitives, all replaceable.
 2. **Tools → SAO → 4. Build Main Menu Scene Content.**
 3. **File → Save As… → `Assets/Scenes/MainMenu.unity`**.
 4. **File → Build Settings → Add Open Scenes** — `MainMenu` must be **index 0**,
-   `TownOfBeginnings` below it (Start Game loads it by name).
+   `FirstHaven` below it (Start Game loads it by name).
 5. Optional but recommended: add the same **Post-process Layer / Volume** combo
    from the style guide to `MenuCamera` — bloom is what makes the castle's
    window dots glow.
@@ -23,13 +23,13 @@ mode in-editor).
 
 | Object | Purpose |
 |---|---|
-| `Aincrad_Castle` | 12 shrinking cylinder tiers + overhanging floor plates (the layer-cake silhouette), rounded rock hull underneath, capsule spires, and HDR-emissive window dots on five tiers for dusk city lights |
+| `Skybound_Citadel` | 12 shrinking cylinder tiers + overhanging floor plates (the layer-cake silhouette), rounded rock hull underneath, capsule spires, and HDR-emissive window dots on five tiers for dusk city lights |
 | `CastleFocus` | empty at mid-height (y=30); the camera's orbit target |
 | `MenuCamera` | `MenuOrbitCamera` — 115 m distance, 42 m height, 3.5°/s, slow vertical drift; HDR on, far plane 800 |
 | `Sun_Dusk` | low warm directional (9°, −35°), `#FF9E73`, soft shadows |
 | Render settings | flat violet ambient, `Sky_Menu` gradient skybox, linear fog 150→500 in dusty rose for depth haze |
 | `MainMenuCanvas` | Screen Space Overlay, scales from 1920×1080; `MainMenuController` with all references pre-wired |
-| Title | UI Text "A I N C R A D" (placeholder logo) + violet drop shadow; subtitle underneath |
+| Title | UI Text "S K Y B O U N D   R E A L M" (original placeholder logo) + violet drop shadow; subtitle underneath |
 | Buttons | Start Game / Load Game / Options / Quit, lower-left column |
 | `OptionsPanel` | hidden placeholder panel with a Back button |
 | `EventSystem` | created if the scene lacks one |

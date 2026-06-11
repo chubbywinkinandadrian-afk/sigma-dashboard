@@ -16,12 +16,12 @@ namespace SAO.EditorTools
     /// models later without touching code.
     ///
     ///   Tools > SAO > 1. Create Toon Materials
-    ///   Tools > SAO > 2. Build Inn Greybox (Town of Beginnings)
+    ///   Tools > SAO > 2. Build Inn Greybox (First Haven)
     ///   Tools > SAO > 3. Build FPS Player Rig
     ///   Tools > SAO > 4. Build Main Menu Scene Content
     ///
     /// Typical flow: new empty scene -> run 2 then 3 -> save as
-    /// "TownOfBeginnings". Another empty scene -> run 4 -> save as "MainMenu".
+    /// "FirstHaven". Another empty scene -> run 4 -> save as "MainMenu".
     /// Add both to Build Settings (MainMenu first).
     /// </summary>
     public static class SAOSceneBuilder
@@ -92,27 +92,31 @@ namespace SAO.EditorTools
         //  2. INN GREYBOX
         // ================================================================== //
 
-        [MenuItem("Tools/SAO/2. Build Inn Greybox (Town of Beginnings)", false, 2)]
+        [MenuItem("Tools/SAO/2. Build Inn Greybox (First Haven)", false, 2)]
         public static void BuildInn()
         {
             CreateMaterials();   // idempotent; dialogs + aborts if the shaders are missing
             if (Shader.Find("SAO/Toon") == null) return;
 
             // ---- idempotency: tear down previous builds before rebuilding ----
-            // (active objects anywhere in the hierarchy, by name)
+            // The inn root name is unambiguously builder-owned, so it is found
+            // anywhere in the hierarchy (the pre-rename name included).
             GameObject stale;
-            while ((stale = GameObject.Find("Inn_TownOfBeginnings")) != null)
+            while ((stale = GameObject.Find("Inn_FirstHaven")) != null)
                 Undo.DestroyObjectImmediate(stale);
-            // The sun was a scene-root object in older builds; it lives under
-            // Lighting now, so absorb strays from earlier runs too.
-            while ((stale = GameObject.Find("Sun_LateAfternoon")) != null)
+            while ((stale = GameObject.Find("Inn_TownOfBeginnings")) != null)   // legacy root name
                 Undo.DestroyObjectImmediate(stale);
-            // ...and inactive leftovers at the scene root.
+            // Stray suns from pre-hierarchy builds were SCENE-ROOT objects, so
+            // only scan the roots for that name — a user-authored child light
+            // that happens to be called Sun_LateAfternoon must never be
+            // deleted. The scan also catches inactive inn roots, which
+            // GameObject.Find skips.
             foreach (var go in SceneManager.GetActiveScene().GetRootGameObjects())
-                if (go.name == "Inn_TownOfBeginnings" || go.name == "Sun_LateAfternoon")
+                if (go.name == "Inn_FirstHaven" || go.name == "Inn_TownOfBeginnings" ||
+                    go.name == "Sun_LateAfternoon")
                     Undo.DestroyObjectImmediate(go);
 
-            var root = new GameObject("Inn_TownOfBeginnings");
+            var root = new GameObject("Inn_FirstHaven");
             Undo.RegisterCreatedObjectUndo(root, "Build Inn Greybox");
 
             Transform architecture = Group(root.transform, "Architecture");
@@ -141,7 +145,7 @@ namespace SAO.EditorTools
 
             int objectCount = root.GetComponentsInChildren<Transform>(true).Length;
             Debug.Log($"[SAO] Inn greybox built ({objectCount} objects). " +
-                      "Next: 'Tools > SAO > 3. Build FPS Player Rig', then save the scene as 'TownOfBeginnings'.");
+                      "Next: 'Tools > SAO > 3. Build FPS Player Rig', then save the scene as 'FirstHaven'.");
         }
 
         // ---- architecture: floor/ceiling/walls with REAL window openings ----
@@ -464,7 +468,7 @@ namespace SAO.EditorTools
             DisableExtraCameras(skipMenuCameras: false);   // must replace our own MenuCamera on re-run
 
             // ---- the floating castle, as a stack of shrinking tiers --------
-            var castle = new GameObject("Aincrad_Castle");
+            var castle = new GameObject("Skybound_Citadel");
             Undo.RegisterCreatedObjectUndo(castle, "Build Castle");
             Transform ct = castle.transform;
 
@@ -561,10 +565,10 @@ namespace SAO.EditorTools
             ConfigureCanvas(canvasGo);
 
             var ctrl = canvasGo.AddComponent<MainMenuController>();
-            ctrl.gameSceneName = "TownOfBeginnings";
+            ctrl.gameSceneName = "FirstHaven";
 
-            // ---- title (placeholder logo — swap for real art later) --------
-            var title = MakeText(canvasGo.transform, "A I N C R A D", 110, new Color(0.97f, 0.95f, 0.90f));
+            // ---- title (original placeholder logo — swap for real art later)
+            var title = MakeText(canvasGo.transform, "S K Y B O U N D   R E A L M", 110, new Color(0.97f, 0.95f, 0.90f));
             var trt = (RectTransform)title.transform;
             trt.anchorMin = trt.anchorMax = new Vector2(0.5f, 1f);
             trt.pivot = new Vector2(0.5f, 1f);
@@ -574,7 +578,7 @@ namespace SAO.EditorTools
             shadow.effectColor = new Color(0.12f, 0.07f, 0.20f, 0.85f);
             shadow.effectDistance = new Vector2(4f, -4f);
 
-            var subtitle = MakeText(canvasGo.transform, "— Floor 1 · Town of Beginnings —", 30,
+            var subtitle = MakeText(canvasGo.transform, "— Floor 1 · First Haven —", 30,
                                     new Color(0.95f, 0.82f, 0.62f));
             var srt = (RectTransform)subtitle.transform;
             srt.anchorMin = srt.anchorMax = new Vector2(0.5f, 1f);

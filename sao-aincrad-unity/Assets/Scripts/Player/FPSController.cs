@@ -3,7 +3,7 @@ using UnityEngine;
 namespace SAO.Player
 {
     /// <summary>
-    /// First-person controller for the Aincrad project.
+    /// First-person controller for the Skybound Realm project.
     ///
     /// Features
     ///  - WASD movement relative to facing (Input Manager axes, no packages)

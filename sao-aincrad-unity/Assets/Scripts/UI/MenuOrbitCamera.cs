@@ -3,8 +3,8 @@ using UnityEngine;
 namespace SAO.UI
 {
     /// <summary>
-    /// Slow cinematic orbit for the main menu: circles a target (the Aincrad
-    /// castle) at a fixed distance and height, with a gentle vertical drift so
+    /// Slow cinematic orbit for the main menu: circles a target (the floating
+    /// citadel) at a fixed distance and height, with a gentle vertical drift so
     /// the shot never feels mechanical. Runs in LateUpdate like any follow cam.
     /// </summary>
     public class MenuOrbitCamera : MonoBehaviour
