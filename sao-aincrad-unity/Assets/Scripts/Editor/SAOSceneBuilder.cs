@@ -259,6 +259,13 @@ namespace SAO.EditorTools
             Cyl("BarStool_L", new Vector3(-1.2f, 0.325f, 2.9f), new Vector3(0.34f, 0.325f, 0.34f), "Wood_Mid", parent);
             Cyl("BarStool_R", new Vector3(1.2f, 0.325f, 2.9f),  new Vector3(0.34f, 0.325f, 0.34f), "Wood_Mid", parent);
 
+            // Debug target for SAOInteractionProbe: a small red sign standing
+            // on the counter at readable height (cube primitive = BoxCollider,
+            // so the probe ray hits it out of the box). Placeholder until real
+            // interactables (doors / NPCs / notice boards) exist — then delete.
+            Box("Debug_Interactable_Sign", new Vector3(1.4f, 1.275f, 3.45f),
+                new Vector3(0.55f, 0.35f, 0.06f), "Fabric_Red", parent);
+
             for (int i = 0; i < InnTablePositions.Length; i++)
                 BuildTable(parent, InnTablePositions[i], i);
 
@@ -358,9 +365,12 @@ namespace SAO.EditorTools
         [MenuItem("Tools/SAO/3. Build FPS Player Rig", false, 3)]
         public static void BuildPlayer()
         {
-            // Idempotency: tear down any existing player rig and its HUD canvas
-            // before rebuilding, so this can be re-run safely like BuildInn().
-            // Use Find (active objects) + GetRootGameObjects (catches inactive ones).
+            // 'Player' and 'PlayerHUD' are generated prototype objects owned
+            // by this builder: they are found BY NAME and torn down on every
+            // run so the menu item stays repeatable (same pattern as
+            // BuildInn). Don't hand-author scene objects with these names.
+            // Find catches active objects anywhere; GetRootGameObjects
+            // catches inactive leftovers at the scene root.
             GameObject stale;
             while ((stale = GameObject.Find("Player")) != null)
                 Undo.DestroyObjectImmediate(stale);
@@ -368,7 +378,7 @@ namespace SAO.EditorTools
                 if (go.name == "Player" || go.name == "PlayerHUD")
                     Undo.DestroyObjectImmediate(go);
 
-            DisableExtraCameras();
+            DisableExtraCameras(skipMenuCameras: true);
 
             Vector3 spawnPos = new Vector3(0f, 0.05f, -3.4f);
             var marker = GameObject.Find("PlayerSpawn_Inn");
@@ -397,13 +407,14 @@ namespace SAO.EditorTools
             cam.allowHDR = true;          // required for bloom thresholds > 1
             camGo.AddComponent<AudioListener>();
 
-            player.AddComponent<FPSController>();   // finds the child camera on Awake
+            player.AddComponent<FPSController>();        // finds the child camera on Awake
+            player.AddComponent<SAOInteractionProbe>();  // E-key debug probe; same camera lookup
 
             BuildHud(player);
 
             Selection.activeGameObject = player;
             MarkDirty();
-            Debug.Log("[SAO] Player rig + HUD built. Press Play. (WASD / mouse / Space / Shift)");
+            Debug.Log("[SAO] Player rig + HUD built. Press Play. (WASD / mouse / Space / Shift, E = interact probe)");
         }
 
         private static void BuildHud(GameObject player)
@@ -450,7 +461,7 @@ namespace SAO.EditorTools
         public static void BuildMainMenu()
         {
             CreateMaterials();
-            DisableExtraCameras();
+            DisableExtraCameras(skipMenuCameras: false);   // must replace our own MenuCamera on re-run
 
             // ---- the floating castle, as a stack of shrinking tiers --------
             var castle = new GameObject("Aincrad_Castle");
@@ -680,10 +691,30 @@ namespace SAO.EditorTools
             Undo.RegisterCreatedObjectUndo(es, "EventSystem");
         }
 
-        private static void DisableExtraCameras()
+        /// <summary>
+        /// Deactivates cameras that would fight the one a builder is about to
+        /// create. With <paramref name="skipMenuCameras"/> true (the player
+        /// builder), anything that is recognizably a menu/UI camera — by name
+        /// or by carrying a MenuOrbitCamera — is left untouched, so running
+        /// "Build FPS Player Rig" in the menu scene by accident never
+        /// dismantles that scene. The menu builder passes false because it
+        /// must replace its own previous MenuCamera on a re-run.
+        /// </summary>
+        private static void DisableExtraCameras(bool skipMenuCameras)
         {
             foreach (var cam in Object.FindObjectsOfType<Camera>())
             {
+                bool isMenuCam = cam.name == "MenuCamera"
+                              || cam.name == "MainMenuCamera"
+                              || cam.name == "UICamera"
+                              || cam.GetComponent<MenuOrbitCamera>() != null;
+                if (skipMenuCameras && isMenuCam)
+                {
+                    Debug.LogWarning($"[SAO] Skipped menu/UI camera '{cam.name}' (left active). " +
+                                     "If this is the main menu scene, you probably didn't mean to build the player here — " +
+                                     "undo, or delete Player/PlayerHUD. Until then two cameras + two AudioListeners coexist.");
+                    continue;
+                }
                 cam.gameObject.SetActive(false);
                 Debug.Log($"[SAO] Disabled pre-existing camera '{cam.name}' (it would fight the new one).");
             }

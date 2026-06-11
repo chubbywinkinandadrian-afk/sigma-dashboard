@@ -38,6 +38,7 @@ swapped for a real model later without touching code.
 | Mouse | Look |
 | Space | Jump (buffered, with coyote time; costs stamina) |
 | Left Shift | Sprint (drains stamina; hitting 0 = exhaustion lockout until 30% refill) |
+| E | Interact probe (debug: logs what's under the crosshair, ≤3 m) |
 | Escape | Release cursor (click to recapture) / close Options in menu |
 
 ## What's where
@@ -46,6 +47,7 @@ swapped for a real model later without touching code.
 Assets/
   Scripts/
     Player/FPSController.cs     responsive FPS controller + stamina system
+    Player/SAOInteractionProbe.cs  crosshair raycast foundation (E logs target)
     UI/StaminaBar.cs            HUD bar (fades out when full)
     UI/MainMenuController.cs    Start / Load / Options / Quit
     UI/MenuOrbitCamera.cs       slow cinematic orbit for the menu
