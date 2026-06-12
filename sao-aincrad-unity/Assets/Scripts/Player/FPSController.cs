@@ -3,7 +3,7 @@ using UnityEngine;
 namespace SAO.Player
 {
     /// <summary>
-    /// First-person controller for the Aincrad project.
+    /// First-person controller for the Skybound Realm project.
     ///
     /// Features
     ///  - WASD movement relative to facing (Input Manager axes, no packages)
@@ -36,7 +36,7 @@ namespace SAO.Player
         [SerializeField] private Camera playerCamera;
 
         [Header("Movement")]
-        [Tooltip("Walk speed in m/s. SAO avatars move briskly; 4.5 reads heroic without feeling slippery.")]
+        [Tooltip("Walk speed in m/s. Player avatars move briskly; 4.5 reads heroic without feeling slippery.")]
         [SerializeField] private float walkSpeed = 4.5f;
         [Tooltip("Sprint speed in m/s while Shift is held and stamina remains.")]
         [SerializeField] private float sprintSpeed = 7.5f;

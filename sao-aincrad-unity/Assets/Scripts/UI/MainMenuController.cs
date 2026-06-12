@@ -21,7 +21,7 @@ namespace SAO.UI
 
         [Header("Scene")]
         [Tooltip("Scene loaded by Start Game. Must be added to File > Build Settings.")]
-        public string gameSceneName = "TownOfBeginnings";
+        public string gameSceneName = "FirstHaven";
 
         [Header("UI References")]
         public Button startButton;

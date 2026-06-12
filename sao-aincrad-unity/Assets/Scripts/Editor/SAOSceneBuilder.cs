@@ -16,12 +16,12 @@ namespace SAO.EditorTools
     /// models later without touching code.
     ///
     ///   Tools > SAO > 1. Create Toon Materials
-    ///   Tools > SAO > 2. Build Inn Greybox (Town of Beginnings)
+    ///   Tools > SAO > 2. Build Inn Greybox (First Haven)
     ///   Tools > SAO > 3. Build FPS Player Rig
     ///   Tools > SAO > 4. Build Main Menu Scene Content
     ///
     /// Typical flow: new empty scene -> run 2 then 3 -> save as
-    /// "TownOfBeginnings". Another empty scene -> run 4 -> save as "MainMenu".
+    /// "FirstHaven". Another empty scene -> run 4 -> save as "MainMenu".
     /// Add both to Build Settings (MainMenu first).
     /// </summary>
     public static class SAOSceneBuilder
@@ -36,12 +36,30 @@ namespace SAO.EditorTools
         [MenuItem("Tools/SAO/1. Create Toon Materials", false, 1)]
         public static void CreateMaterials()
         {
-            if (Shader.Find("SAO/Toon") == null || Shader.Find("SAO/SkyGradient") == null)
+            if (!ShadersOk())
             {
                 EditorUtility.DisplayDialog("SAO Builder",
-                    "Shaders 'SAO/Toon' and/or 'SAO/SkyGradient' not found.\n" +
+                    "Required shaders not found.\n" +
+                    "Built-in RP needs 'SAO/Toon'; URP uses 'SAO/ToonURP'.\n" +
+                    "'SAO/SkyGradient' is required in both.\n" +
                     "Check that Assets/Shaders imported without compile errors.", "OK");
                 return;
+            }
+            // Under URP, warn once if we're on the flat-color Lit fallback.
+            if (GraphicsSettings.currentRenderPipeline != null)
+            {
+                var toon = PickToonShader();
+                if (toon == null)
+                {
+                    EditorUtility.DisplayDialog("SAO Builder",
+                        "No usable toon shader and no 'Universal Render Pipeline/Lit' " +
+                        "fallback found — is URP installed correctly?", "OK");
+                    return;
+                }
+                if (toon.name != "SAO/ToonURP")
+                    Debug.LogWarning("[SAO] 'SAO/ToonURP' is missing or has compile errors — " +
+                                     "generated materials fall back to flat-color URP Lit " +
+                                     "(correct colors, but no bands/outlines until the shader is fixed).");
             }
 
             EnsureFolder("Assets", "SAO_Generated");
@@ -92,27 +110,31 @@ namespace SAO.EditorTools
         //  2. INN GREYBOX
         // ================================================================== //
 
-        [MenuItem("Tools/SAO/2. Build Inn Greybox (Town of Beginnings)", false, 2)]
+        [MenuItem("Tools/SAO/2. Build Inn Greybox (First Haven)", false, 2)]
         public static void BuildInn()
         {
             CreateMaterials();   // idempotent; dialogs + aborts if the shaders are missing
-            if (Shader.Find("SAO/Toon") == null) return;
+            if (!ShadersOk()) return;
 
             // ---- idempotency: tear down previous builds before rebuilding ----
-            // (active objects anywhere in the hierarchy, by name)
+            // The inn root name is unambiguously builder-owned, so it is found
+            // anywhere in the hierarchy (the pre-rename name included).
             GameObject stale;
-            while ((stale = GameObject.Find("Inn_TownOfBeginnings")) != null)
+            while ((stale = GameObject.Find("Inn_FirstHaven")) != null)
                 Undo.DestroyObjectImmediate(stale);
-            // The sun was a scene-root object in older builds; it lives under
-            // Lighting now, so absorb strays from earlier runs too.
-            while ((stale = GameObject.Find("Sun_LateAfternoon")) != null)
+            while ((stale = GameObject.Find("Inn_TownOfBeginnings")) != null)   // legacy root name
                 Undo.DestroyObjectImmediate(stale);
-            // ...and inactive leftovers at the scene root.
+            // Stray suns from pre-hierarchy builds were SCENE-ROOT objects, so
+            // only scan the roots for that name — a user-authored child light
+            // that happens to be called Sun_LateAfternoon must never be
+            // deleted. The scan also catches inactive inn roots, which
+            // GameObject.Find skips.
             foreach (var go in SceneManager.GetActiveScene().GetRootGameObjects())
-                if (go.name == "Inn_TownOfBeginnings" || go.name == "Sun_LateAfternoon")
+                if (go.name == "Inn_FirstHaven" || go.name == "Inn_TownOfBeginnings" ||
+                    go.name == "Sun_LateAfternoon")
                     Undo.DestroyObjectImmediate(go);
 
-            var root = new GameObject("Inn_TownOfBeginnings");
+            var root = new GameObject("Inn_FirstHaven");
             Undo.RegisterCreatedObjectUndo(root, "Build Inn Greybox");
 
             Transform architecture = Group(root.transform, "Architecture");
@@ -141,7 +163,7 @@ namespace SAO.EditorTools
 
             int objectCount = root.GetComponentsInChildren<Transform>(true).Length;
             Debug.Log($"[SAO] Inn greybox built ({objectCount} objects). " +
-                      "Next: 'Tools > SAO > 3. Build FPS Player Rig', then save the scene as 'TownOfBeginnings'.");
+                      "Next: 'Tools > SAO > 3. Build FPS Player Rig', then save the scene as 'FirstHaven'.");
         }
 
         // ---- architecture: floor/ceiling/walls with REAL window openings ----
@@ -259,6 +281,13 @@ namespace SAO.EditorTools
             Cyl("BarStool_L", new Vector3(-1.2f, 0.325f, 2.9f), new Vector3(0.34f, 0.325f, 0.34f), "Wood_Mid", parent);
             Cyl("BarStool_R", new Vector3(1.2f, 0.325f, 2.9f),  new Vector3(0.34f, 0.325f, 0.34f), "Wood_Mid", parent);
 
+            // Debug target for SAOInteractionProbe: a small red sign standing
+            // on the counter at readable height (cube primitive = BoxCollider,
+            // so the probe ray hits it out of the box). Placeholder until real
+            // interactables (doors / NPCs / notice boards) exist — then delete.
+            Box("Debug_Interactable_Sign", new Vector3(1.4f, 1.275f, 3.45f),
+                new Vector3(0.55f, 0.35f, 0.06f), "Fabric_Red", parent);
+
             for (int i = 0; i < InnTablePositions.Length; i++)
                 BuildTable(parent, InnTablePositions[i], i);
 
@@ -358,15 +387,20 @@ namespace SAO.EditorTools
         [MenuItem("Tools/SAO/3. Build FPS Player Rig", false, 3)]
         public static void BuildPlayer()
         {
-            var existing = Object.FindObjectOfType<FPSController>();
-            if (existing != null)
-            {
-                Debug.LogWarning("[SAO] A player rig already exists in this scene.");
-                Selection.activeGameObject = existing.gameObject;
-                return;
-            }
+            // 'Player' and 'PlayerHUD' are generated prototype objects owned
+            // by this builder: they are found BY NAME and torn down on every
+            // run so the menu item stays repeatable (same pattern as
+            // BuildInn). Don't hand-author scene objects with these names.
+            // Find catches active objects anywhere; GetRootGameObjects
+            // catches inactive leftovers at the scene root.
+            GameObject stale;
+            while ((stale = GameObject.Find("Player")) != null)
+                Undo.DestroyObjectImmediate(stale);
+            foreach (var go in SceneManager.GetActiveScene().GetRootGameObjects())
+                if (go.name == "Player" || go.name == "PlayerHUD")
+                    Undo.DestroyObjectImmediate(go);
 
-            DisableExtraCameras();
+            DisableExtraCameras(skipMenuCameras: true);
 
             Vector3 spawnPos = new Vector3(0f, 0.05f, -3.4f);
             var marker = GameObject.Find("PlayerSpawn_Inn");
@@ -395,13 +429,14 @@ namespace SAO.EditorTools
             cam.allowHDR = true;          // required for bloom thresholds > 1
             camGo.AddComponent<AudioListener>();
 
-            player.AddComponent<FPSController>();   // finds the child camera on Awake
+            player.AddComponent<FPSController>();        // finds the child camera on Awake
+            player.AddComponent<SAOInteractionProbe>();  // E-key debug probe; same camera lookup
 
             BuildHud(player);
 
             Selection.activeGameObject = player;
             MarkDirty();
-            Debug.Log("[SAO] Player rig + HUD built. Press Play. (WASD / mouse / Space / Shift)");
+            Debug.Log("[SAO] Player rig + HUD built. Press Play. (WASD / mouse / Space / Shift, E = interact probe)");
         }
 
         private static void BuildHud(GameObject player)
@@ -448,10 +483,11 @@ namespace SAO.EditorTools
         public static void BuildMainMenu()
         {
             CreateMaterials();
-            DisableExtraCameras();
+            if (!ShadersOk()) return;
+            DisableExtraCameras(skipMenuCameras: false);   // must replace our own MenuCamera on re-run
 
             // ---- the floating castle, as a stack of shrinking tiers --------
-            var castle = new GameObject("Aincrad_Castle");
+            var castle = new GameObject("Skybound_Citadel");
             Undo.RegisterCreatedObjectUndo(castle, "Build Castle");
             Transform ct = castle.transform;
 
@@ -548,10 +584,10 @@ namespace SAO.EditorTools
             ConfigureCanvas(canvasGo);
 
             var ctrl = canvasGo.AddComponent<MainMenuController>();
-            ctrl.gameSceneName = "TownOfBeginnings";
+            ctrl.gameSceneName = "FirstHaven";
 
-            // ---- title (placeholder logo — swap for real art later) --------
-            var title = MakeText(canvasGo.transform, "A I N C R A D", 110, new Color(0.97f, 0.95f, 0.90f));
+            // ---- title (original placeholder logo — swap for real art later)
+            var title = MakeText(canvasGo.transform, "S K Y B O U N D   R E A L M", 110, new Color(0.97f, 0.95f, 0.90f));
             var trt = (RectTransform)title.transform;
             trt.anchorMin = trt.anchorMax = new Vector2(0.5f, 1f);
             trt.pivot = new Vector2(0.5f, 1f);
@@ -561,7 +597,7 @@ namespace SAO.EditorTools
             shadow.effectColor = new Color(0.12f, 0.07f, 0.20f, 0.85f);
             shadow.effectDistance = new Vector2(4f, -4f);
 
-            var subtitle = MakeText(canvasGo.transform, "— Floor 1 · Town of Beginnings —", 30,
+            var subtitle = MakeText(canvasGo.transform, "— Floor 1 · First Haven —", 30,
                                     new Color(0.95f, 0.82f, 0.62f));
             var srt = (RectTransform)subtitle.transform;
             srt.anchorMin = srt.anchorMax = new Vector2(0.5f, 1f);
@@ -678,10 +714,30 @@ namespace SAO.EditorTools
             Undo.RegisterCreatedObjectUndo(es, "EventSystem");
         }
 
-        private static void DisableExtraCameras()
+        /// <summary>
+        /// Deactivates cameras that would fight the one a builder is about to
+        /// create. With <paramref name="skipMenuCameras"/> true (the player
+        /// builder), anything that is recognizably a menu/UI camera — by name
+        /// or by carrying a MenuOrbitCamera — is left untouched, so running
+        /// "Build FPS Player Rig" in the menu scene by accident never
+        /// dismantles that scene. The menu builder passes false because it
+        /// must replace its own previous MenuCamera on a re-run.
+        /// </summary>
+        private static void DisableExtraCameras(bool skipMenuCameras)
         {
             foreach (var cam in Object.FindObjectsOfType<Camera>())
             {
+                bool isMenuCam = cam.name == "MenuCamera"
+                              || cam.name == "MainMenuCamera"
+                              || cam.name == "UICamera"
+                              || cam.GetComponent<MenuOrbitCamera>() != null;
+                if (skipMenuCameras && isMenuCam)
+                {
+                    Debug.LogWarning($"[SAO] Skipped menu/UI camera '{cam.name}' (left active). " +
+                                     "If this is the main menu scene, you probably didn't mean to build the player here — " +
+                                     "undo, or delete Player/PlayerHUD. Until then two cameras + two AudioListeners coexist.");
+                    continue;
+                }
                 cam.gameObject.SetActive(false);
                 Debug.Log($"[SAO] Disabled pre-existing camera '{cam.name}' (it would fight the new one).");
             }
@@ -765,6 +821,33 @@ namespace SAO.EditorTools
             return m;
         }
 
+        /// <summary>True when every shader the active pipeline needs exists.
+        /// Under URP the toon shader is optional (URP Lit fallback).</summary>
+        private static bool ShadersOk()
+        {
+            if (Shader.Find("SAO/SkyGradient") == null) return false;
+            if (GraphicsSettings.currentRenderPipeline == null && Shader.Find("SAO/Toon") == null)
+                return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Toon shader for the active render pipeline: SAO/Toon on Built-in,
+        /// SAO/ToonURP on URP. If the URP port is missing or failed to compile
+        /// (ShaderHasError), falls back to flat-color URP Lit so the greybox
+        /// renders with correct colors instead of magenta.
+        /// </summary>
+        private static Shader PickToonShader()
+        {
+            if (GraphicsSettings.currentRenderPipeline == null)
+                return Shader.Find("SAO/Toon");
+
+            var urpToon = Shader.Find("SAO/ToonURP");
+            if (urpToon != null && !ShaderUtil.ShaderHasError(urpToon))
+                return urpToon;
+            return Shader.Find("Universal Render Pipeline/Lit");
+        }
+
         private static Material ToonMat(string name, Color baseCol, Color shadowTint, float outlineWidth)
             => ToonMat(name, baseCol, shadowTint, outlineWidth, Color.black, 96f, Color.black);
 
@@ -772,20 +855,51 @@ namespace SAO.EditorTools
                                         Color specTint, float gloss, Color emission)
         {
             string path = MatFolder + "/" + name + ".mat";
+            Shader shader = PickToonShader();
+            if (shader == null)
+            {
+                Debug.LogError("[SAO] No usable toon shader for material '" + name + "'.");
+                return null;
+            }
+
             var m = AssetDatabase.LoadAssetAtPath<Material>(path);
             bool isNew = m == null;
-            if (isNew) m = new Material(Shader.Find("SAO/Toon"));
+            if (isNew) m = new Material(shader);
+            // Existing assets keep whatever shader they were created with —
+            // re-running the builder after a pipeline switch retargets them
+            // (this is what un-magentas materials generated under another RP).
+            else if (m.shader != shader) m.shader = shader;
 
-            m.SetColor("_Color", baseCol);
-            m.SetColor("_ShadowTint", shadowTint);
-            m.SetFloat("_Bands", 2f);
-            m.SetFloat("_OutlineWidth", outlineWidth);
-            m.SetFloat("_OutlineOn", outlineWidth > 0f ? 1f : 0f);
-            if (outlineWidth > 0f) m.EnableKeyword("OUTLINE_ON");
-            else m.DisableKeyword("OUTLINE_ON");
-            m.SetColor("_SpecularTint", specTint);
-            m.SetFloat("_Glossiness", gloss);
-            m.SetColor("_EmissionColor", emission);
+            if (shader.name.StartsWith("SAO/Toon"))
+            {
+                m.SetColor("_Color", baseCol);
+                m.SetColor("_ShadowTint", shadowTint);
+                m.SetFloat("_Bands", 2f);
+                m.SetFloat("_OutlineWidth", outlineWidth);
+                m.SetFloat("_OutlineOn", outlineWidth > 0f ? 1f : 0f);
+                if (outlineWidth > 0f) m.EnableKeyword("OUTLINE_ON");
+                else m.DisableKeyword("OUTLINE_ON");
+                m.SetColor("_SpecularTint", specTint);
+                m.SetFloat("_Glossiness", gloss);
+                m.SetColor("_EmissionColor", emission);
+            }
+            else
+            {
+                // URP Lit fallback: flat colors + emission, no bands/outline.
+                m.SetColor("_BaseColor", baseCol);
+                m.SetFloat("_Metallic", 0f);
+                m.SetFloat("_Smoothness", 0.15f);
+                if (emission.maxColorComponent > 0.001f)
+                {
+                    m.EnableKeyword("_EMISSION");
+                    m.SetColor("_EmissionColor", emission);
+                }
+                else
+                {
+                    m.DisableKeyword("_EMISSION");
+                    m.SetColor("_EmissionColor", Color.black);
+                }
+            }
 
             if (isNew) AssetDatabase.CreateAsset(m, path);
             else EditorUtility.SetDirty(m);
@@ -795,9 +909,11 @@ namespace SAO.EditorTools
         private static Material SkyMat(string name, Color top, Color horizon, Color bottom)
         {
             string path = MatFolder + "/" + name + ".mat";
+            var shader = Shader.Find("SAO/SkyGradient");   // unlit: works in both pipelines
             var m = AssetDatabase.LoadAssetAtPath<Material>(path);
             bool isNew = m == null;
-            if (isNew) m = new Material(Shader.Find("SAO/SkyGradient"));
+            if (isNew) m = new Material(shader);
+            else if (m.shader != shader) m.shader = shader;
 
             m.SetColor("_TopColor", top);
             m.SetColor("_HorizonColor", horizon);

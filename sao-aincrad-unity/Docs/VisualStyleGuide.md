@@ -1,4 +1,4 @@
-# SAO Aincrad Visual Style Guide
+# Skybound Realm Visual Style Guide
 ### Unity 2022.3 LTS · Built-in Render Pipeline · Post-Processing Stack v2
 
 This is the recipe for the "looks like the anime" target: flat banded light,
@@ -75,7 +75,7 @@ Full source: `Assets/Shaders/SAOToon.shader`. Three passes:
 
 ---
 
-## 3. Lighting & rendering settings (Town of Beginnings inn)
+## 3. Lighting & rendering settings (First Haven inn)
 
 The builder (`Tools → SAO → 2`) applies all of this automatically; values below
 are the reference if you set it up by hand. The scheme is the anime's
@@ -193,7 +193,7 @@ so replacement models inherit the style.
 | Timber frame / beams | `#664A30` dark walnut | `Wood_Dark` |
 | Furniture wood | `#8C6642` honey oak | `Wood_Mid` |
 | Fireplace stone | `#706B68` | `Stone_Dark` |
-| Rug / fabric accents | `#9E2E29` SAO red | `Fabric_Red` |
+| Rug / fabric accents | `#9E2E29` deep crimson | `Fabric_Red` |
 | Lantern brass | `#B58C4F` | `Brass` (sharp specular) |
 | Lantern glass | emissive ~2.6× HDR orange | `Lantern_Glass` |
 
