@@ -112,6 +112,13 @@
         <h1>Re:<span>IMPACT</span></h1>
         <p class="tagline">Starting Life as a Gacha Game in Another World</p>
       </div>
+      <a class="world-cta" href="world.html">
+        <span class="wc-icon">🗺️</span>
+        <span><b>Explore Lugunica — 3D Open World</b>
+        <small>Travel the map, fight in real time, and clear the same story on foot.
+        Roster, summons and progress are shared.</small></span>
+        <span class="wc-go">▶</span>
+      </a>
       <div class="panel">
         <h3>📅 Daily Blessing</h3>
         <p>The Dragon's covenant provides. Probably.</p>

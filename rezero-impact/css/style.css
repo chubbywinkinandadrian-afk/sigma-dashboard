@@ -125,6 +125,19 @@ body {
 .hero h1 span { color: var(--gold-bright); text-shadow: 0 0 24px #e0b75c66; }
 .tagline { color: var(--dim); font-style: italic; margin-top: 6px; }
 
+/* ------------------------------------------------ open-world CTA */
+.world-cta {
+  display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--text);
+  background: linear-gradient(135deg, #1d2c45, #20402f);
+  border: 1px solid var(--gold); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px;
+  transition: all .15s; box-shadow: 0 0 18px #e0b75c20;
+}
+.world-cta:hover { transform: translateY(-2px); box-shadow: 0 4px 26px #e0b75c40; }
+.world-cta .wc-icon { font-size: 34px; }
+.world-cta b { color: var(--gold-bright); display: block; font-size: 16px; }
+.world-cta small { color: var(--dim); font-size: 12px; line-height: 1.4; display: block; margin-top: 3px; }
+.world-cta .wc-go { margin-left: auto; color: var(--gold-bright); font-size: 20px; }
+
 /* ------------------------------------------------ char cards */
 .char-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; }
 .char-grid.dim { opacity: .55; }

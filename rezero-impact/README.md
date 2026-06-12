@@ -1,22 +1,49 @@
 # Re:Impact — Starting Life as a Gacha Game in Another World
 
 A browser-playable, Genshin-style gacha RPG re-skinned with the world and cast of
-**Re:Zero** — built as an unofficial, non-commercial fan prototype. No engine, no
-build step, no dependencies: open `index.html` and play.
+**Re:Zero** — built as an unofficial, non-commercial fan prototype. Two ways to play,
+sharing one save: a menu game (gacha + turn-based battles) and a **3D open world**
+(Three.js) where you physically travel Lugunica to fight the same story.
 
 ## Run it
 
 ```bash
-# option 1: just open the file
-open rezero-impact/index.html        # macOS
-xdg-open rezero-impact/index.html    # Linux
-
-# option 2: serve it (recommended)
+# serve it (recommended; also works by just opening index.html)
 cd rezero-impact && python3 -m http.server 8000
-# → http://localhost:8000
+# → http://localhost:8000            (menu: gacha, party, story)
+# → http://localhost:8000/world.html (3D open world)
 ```
 
 Progress autosaves to `localStorage` (export/import codes in ⚙️ Settings).
+Roster, crystals, pity, and story progress are shared between both modes.
+
+## 3D Open World
+
+An explorable low-poly Lugunica (~2.4 km²): the Capital, Roswaal Manor, Mathers
+Forest, the Liphas Plains, the Witch Cult hideout, the snowy Sanctuary, and
+Priestella built on decks over the water. Each story stage is a real place — a
+golden beacon marks the next objective, mob camps roam the roads, and boss
+arenas wait at landmarks (the White Whale circles the great flower tree).
+
+- **Real-time action combat**: light attacks (ranged characters fire bolts),
+  dodge rolls with i-frames, skills/bursts adapted from each character's kit,
+  elemental auras and reactions, telegraphed enemy attacks and boss ground slams.
+  Regulus still only drops his guard when he pauses for breath.
+- **Genshin-style party**: switch between your 4 deployed characters with 1–4;
+  if the whole party falls, **Return by Death** wakes you at the last waypoint
+  with stacking Determination.
+- **Travel**: discover waypoint crystals in each region for fast travel; day/night
+  cycle; circular minimap.
+
+| Input | Action |
+|---|---|
+| WASD / mouse | move / camera (click canvas for mouse-look) |
+| LMB (or J) | attack |
+| E / Q | skill / burst (100 energy) |
+| Space / Shift | dodge roll / sprint |
+| Tab | lock-on |
+| 1–4 | switch character |
+| Esc | pause, fast travel, back to menu |
 
 ## What's in the box
 
@@ -33,29 +60,39 @@ Progress autosaves to `localStorage` (export/import codes in ⚙️ Settings).
 ## Testing
 
 ```bash
-node test/smoke.js      # data integrity, gacha math, combat, balance sim
-node test/ui-smoke.js   # executes every screen + a live battle via DOM shim
+node test/smoke.js        # data integrity, gacha math, turn-based combat, balance sim
+node test/ui-smoke.js     # executes every menu screen + a live battle via DOM shim
+node test/world-smoke.js  # terrain sanity, stage placement, full open-world bot playthrough
 ```
 
-The smoke test validates data integrity (every enemy/banner/join reference),
-runs 20,000 seeded pulls to verify pity/guarantee math, unit-tests reactions,
-loot, and the RbD revive, and **simulates a full playthrough** with a budget
-party to prove the difficulty curve is clearable without grinding (bosses land
-in the 10–26 round range). The UI smoke test renders every screen and plays an
-auto-battle end-to-end to catch runtime template errors.
+The menu smoke test validates every data reference, runs 20,000 seeded pulls to
+verify pity/guarantee math, and simulates a full turn-based playthrough. The
+world smoke test samples 10,000 terrain points, checks every stage spot and
+camp is walkable, then has a **bot physically fight through all 26 stages in
+real time** (trash 3–17s, final bosses 1.8–2.8 min, zero forced deaths) and
+executes the HUD against a DOM shim. The Three.js render layer is the one part
+that needs a real browser.
 
 ## Project layout
 
 ```
-index.html        shell + script order
-css/style.css     all styling (dark/gold, rarity glows, RbD overlay)
-js/data.js        characters, banners, enemies, story, tuning constants
-js/gacha.js       pull + pity engine
-js/combat.js      turn-based battle engine (auras, reactions, gimmicks)
-js/game.js        save state, progression, rewards
-js/sfx.js         synthesized WebAudio sound (no assets)
-js/ui.js          every screen, summon animation, battle UI
-test/smoke.js     headless validation + balance simulation (Node)
+index.html           menu game (gacha, party, turn-based story)
+world.html           3D open-world mode
+css/                 style.css (menu) + world.css (HUD)
+js/data.js           characters, banners, enemies, story, tuning constants
+js/gacha.js          pull + pity engine
+js/combat.js         turn-based battle engine (auras, reactions, gimmicks)
+js/game.js           shared save state, progression, rewards
+js/sfx.js            synthesized WebAudio sound (no assets)
+js/ui.js             menu screens, summon animation, battle UI
+js/world/wdata.js    map layout, stage placement, camps, looks, tuning
+js/world/terrain.js  procedural heightmap/colors (pure math)
+js/world/wcore.js    real-time simulation: combat, AI, quests (no rendering)
+js/world/wrender.js  Three.js scene: terrain, landmarks, actors, FX
+js/world/whud.js     HUD, dialogs, pause/fast-travel, RbD overlay
+js/world/wmain.js    input, camera, main loop
+vendor/three.min.js  Three.js r128 (MIT — see vendor/THREE-LICENSE)
+test/                smoke.js, ui-smoke.js, world-smoke.js (all Node, headless)
 ```
 
 ## Disclaimer
