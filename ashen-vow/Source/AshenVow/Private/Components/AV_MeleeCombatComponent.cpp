@@ -108,9 +108,12 @@ void UAV_MeleeCombatComponent::EnterPhase(EAV_AttackPhase NewPhase)
 
 	if (NewPhase == EAV_AttackPhase::Active && ActiveAttack.LungeImpulse > 0.f)
 	{
-		if (ACharacter* Character = Cast<ACharacter>(GetOwner()))
+		// Direct velocity add — LaunchCharacter would flip into falling mode and
+		// the anim blueprint plays a land/dip pose (reads as a crouch).
+		if (const ACharacter* Character = Cast<ACharacter>(GetOwner()))
 		{
-			Character->LaunchCharacter(Character->GetActorForwardVector() * ActiveAttack.LungeImpulse, false, false);
+			const FVector Impulse = Character->GetActorForwardVector() * ActiveAttack.LungeImpulse;
+			Character->GetCharacterMovement()->Velocity += FVector(Impulse.X, Impulse.Y, 0.f);
 		}
 	}
 }

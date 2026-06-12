@@ -164,17 +164,28 @@ void AAV_EnemyBase::TickChase(float DeltaTime)
 		return;
 	}
 
-	RepathElapsed += DeltaTime;
-	if (RepathElapsed >= 0.4f)
+	if (bDirectMoveFallback)
 	{
-		RepathElapsed = 0.f;
-		MoveTowards(Player->GetActorLocation(), AttackRange * 0.7f);
-	}
-	else if (bDirectMoveFallback)
-	{
-		// No navmesh: keep feeding input every tick between repath attempts.
+		// No navmesh: walk straight at the player every tick.
 		const FVector Direction = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
 		GetCharacterMovement()->AddInputVector(Direction);
+		return;
+	}
+
+	// Issue ONE follow request — MoveToActor tracks the moving player by itself.
+	// Re-issuing every few ticks restarts path following and looks like stuttering.
+	AAIController* AI = Cast<AAIController>(GetController());
+	UPathFollowingComponent* PathFollowing = AI ? AI->GetPathFollowingComponent() : nullptr;
+	const bool bAlreadyFollowing = PathFollowing && PathFollowing->GetStatus() != EPathFollowingStatus::Idle;
+
+	if (AI && !bAlreadyFollowing)
+	{
+		const EPathFollowingRequestResult::Type Result = AI->MoveToActor(Player, AttackRange * 0.7f);
+		bDirectMoveFallback = Result == EPathFollowingRequestResult::Failed;
+	}
+	else if (!AI)
+	{
+		bDirectMoveFallback = true;
 	}
 }
 
@@ -317,23 +328,30 @@ bool AAV_EnemyBase::CanSee(const AActor* Target) const
 void AAV_EnemyBase::MoveTowards(const FVector& Destination, float AcceptanceRadius)
 {
 	AAIController* AI = Cast<AAIController>(GetController());
-	bool bNavMoveStarted = false;
 
-	if (AI)
+	if (AI && !bDirectMoveFallback)
 	{
+		// Already path-following? Let it finish — re-issuing causes stutter.
+		if (const UPathFollowingComponent* PathFollowing = AI->GetPathFollowingComponent())
+		{
+			if (PathFollowing->GetStatus() != EPathFollowingStatus::Idle)
+			{
+				return;
+			}
+		}
+
 		const EPathFollowingRequestResult::Type Result = AI->MoveToLocation(
 			Destination, AcceptanceRadius, true, true, false, true);
-		bNavMoveStarted = Result == EPathFollowingRequestResult::RequestSuccessful ||
-			Result == EPathFollowingRequestResult::AlreadyAtGoal;
+		if (Result != EPathFollowingRequestResult::Failed)
+		{
+			return;
+		}
+		bDirectMoveFallback = true;
 	}
 
-	bDirectMoveFallback = !bNavMoveStarted;
-	if (bDirectMoveFallback)
-	{
-		// No navmesh (or path failed): walk straight at the destination.
-		const FVector Direction = (Destination - GetActorLocation()).GetSafeNormal2D();
-		GetCharacterMovement()->AddInputVector(Direction);
-	}
+	// No navmesh (or path failed): walk straight at the destination.
+	const FVector Direction = (Destination - GetActorLocation()).GetSafeNormal2D();
+	GetCharacterMovement()->AddInputVector(Direction);
 }
 
 void AAV_EnemyBase::FaceTowards(const FVector& Point, float DeltaTime, float Speed)

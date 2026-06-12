@@ -52,12 +52,19 @@ void AAV_GameHUD::DrawHUD()
 		GetTextSize(AshText, AshW, AshH, Medium);
 		DrawText(AshText, TextColor, Canvas->SizeX - AshW - 48.f, Canvas->SizeY - AshH - 44.f, Medium);
 
-		// Interaction prompt, lower center.
+		// Interaction prompt, lower center — large, with a backing panel for readability.
 		const FText Prompt = Player->GetInteractionComponent()->GetFocusedPromptText();
 		if (!Prompt.IsEmpty())
 		{
-			DrawCenteredText(FString::Printf(TEXT("[F]  %s"), *Prompt.ToString()),
-				Canvas->SizeX * 0.5f, Canvas->SizeY * 0.78f, TextColor, Medium, 1.f);
+			const FString PromptText = FString::Printf(TEXT("[F]  %s"), *Prompt.ToString());
+			const float PromptScale = 1.4f;
+			float PromptW, PromptH;
+			GetTextSize(PromptText, PromptW, PromptH, Large, PromptScale);
+			const float PromptX = Canvas->SizeX * 0.5f;
+			const float PromptY = Canvas->SizeY * 0.76f;
+			DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.55f),
+				PromptX - PromptW * 0.5f - 18.f, PromptY - 10.f, PromptW + 36.f, PromptH + 20.f);
+			DrawCenteredText(PromptText, PromptX, PromptY, TextColor, Large, PromptScale);
 		}
 	}
 

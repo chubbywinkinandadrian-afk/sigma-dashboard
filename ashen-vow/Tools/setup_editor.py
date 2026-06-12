@@ -170,6 +170,55 @@ def make_gamemode_bp():
     compile_and_save(bp, BP_DIR + "/BP_AVGameMode")
 
 
+@step("attack montages (template MM_Attack anims -> player + soldier)")
+def make_attack_montages():
+    anim_dir = ROOT + "/Anims"
+    if not eal.does_directory_exist(anim_dir):
+        eal.make_directory(anim_dir)
+
+    def make_montage(seq_name, montage_name):
+        asset_path = anim_dir + "/" + montage_name
+        if eal.does_asset_exist(asset_path):
+            return unreal.load_asset(asset_path)
+        seq_path = find_asset_by_name(seq_name)
+        if not seq_path:
+            warn("animation '%s' not found, montage skipped" % seq_name)
+            return None
+        seq = unreal.load_asset(seq_path)
+        factory = unreal.AnimMontageFactory()
+        set_prop(factory, ["target_skeleton"], seq.get_editor_property("skeleton"))
+        if not set_prop(factory, ["source_animation"], seq):
+            warn("AnimMontageFactory lacks source_animation; montage may be empty")
+        montage = asset_tools.create_asset(montage_name, anim_dir, None, factory)
+        if montage:
+            eal.save_asset(asset_path, only_if_is_dirty=False)
+        return montage
+
+    light1 = make_montage("MM_Attack_01", "M_Attack_Light1")
+    light2 = make_montage("MM_Attack_02", "M_Attack_Light2")
+    heavy = make_montage("MM_ChargedAttack", "M_Attack_Heavy")
+    lights = [m for m in (light1, light2) if m]
+
+    def assign(bp_name, combo_prop, montages, heavy_montage=None):
+        cdo, _ = bp_cdo(bp_name)
+        combo = cdo.get_editor_property(combo_prop)
+        new_combo = unreal.Array(unreal.AV_AttackData)
+        for i, attack in enumerate(combo):
+            if montages:
+                attack.set_editor_property("montage", montages[i % len(montages)])
+            new_combo.append(attack)
+        cdo.set_editor_property(combo_prop, new_combo)
+        if heavy_montage:
+            heavy_attack = cdo.get_editor_property("heavy_attack")
+            heavy_attack.set_editor_property("montage", heavy_montage)
+            cdo.set_editor_property("heavy_attack", heavy_attack)
+        compile_and_save(unreal.load_asset(BP_DIR + "/" + bp_name), BP_DIR + "/" + bp_name)
+
+    if lights:
+        assign("BP_Vowless", "light_attack_combo", lights, heavy)
+        assign("BP_AshboundSoldier", "attack_combo", lights)
+
+
 # ---------------------------------------------------------------------- Map
 
 def spawn(actor_subsys, cls, loc, rot=unreal.Rotator(0, 0, 0)):
@@ -255,6 +304,7 @@ def main():
     make_character_bps()
     make_altar_bp()
     make_gamemode_bp()
+    make_attack_montages()
     make_map()
     eal.save_directory(ROOT, only_if_is_dirty=False, recursive=True)
 

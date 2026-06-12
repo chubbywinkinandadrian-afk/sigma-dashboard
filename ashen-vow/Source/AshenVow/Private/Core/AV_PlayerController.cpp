@@ -2,6 +2,11 @@
 #include "UI/AV_HUDWidget.h"
 #include "Blueprint/UserWidget.h"
 
+bool AAV_PlayerController::HasDeathScreenWidget() const
+{
+	return DeathScreenClass != nullptr;
+}
+
 void AAV_PlayerController::BeginPlay()
 {
 	Super::BeginPlay();

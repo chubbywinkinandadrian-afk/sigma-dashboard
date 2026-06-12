@@ -26,7 +26,7 @@ public:
 
 	/** True once a WBP death screen is assigned — the canvas HUD then skips its overlay. */
 	UFUNCTION(BlueprintPure, Category = "AshenVow|UI")
-	bool HasDeathScreenWidget() const { return DeathScreenClass != nullptr; }
+	bool HasDeathScreenWidget() const;
 
 protected:
 	virtual void BeginPlay() override;

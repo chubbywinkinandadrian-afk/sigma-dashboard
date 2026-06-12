@@ -147,7 +147,6 @@ private:
 	float AttackCooldownRemaining = 0.f;
 	int32 ComboAttackIndex = 0;
 	bool bAttackInProgress = false;
-	float RepathElapsed = 0.f;
 	bool bDirectMoveFallback = false;
 	FTimerHandle CorpseTimer;
 };
