@@ -58,7 +58,9 @@ void AAV_GameHUD::DrawHUD()
 		DrawText(AshText, TextColor, Canvas->SizeX - AshW - 48.f, Canvas->SizeY - AshH - 44.f, Medium);
 
 		// Interaction prompt, lower center — large, with a backing panel for readability.
-		const FText Prompt = Player->GetInteractionComponent()->GetFocusedPromptText();
+		const FText Prompt = Player->IsResting()
+			? NSLOCTEXT("AshenVow", "RisePrompt", "Rise")
+			: Player->GetInteractionComponent()->GetFocusedPromptText();
 		if (!Prompt.IsEmpty())
 		{
 			const FString PromptText = FString::Printf(TEXT("[F]  %s"), *Prompt.ToString());

@@ -246,6 +246,37 @@ def make_reaction_montages():
         compile_and_save(unreal.load_asset(BP_DIR + "/" + bp_name), BP_DIR + "/" + bp_name)
 
 
+@step("hit flash material (red overlay when damaged)")
+def make_hitflash_material():
+    fx_dir = ROOT + "/FX"
+    if not eal.does_directory_exist(fx_dir):
+        eal.make_directory(fx_dir)
+    mat_path = fx_dir + "/M_HitFlash"
+
+    if eal.does_asset_exist(mat_path):
+        mat = unreal.load_asset(mat_path)
+    else:
+        mat = asset_tools.create_asset("M_HitFlash", fx_dir, None, unreal.MaterialFactoryNew())
+        mel = unreal.MaterialEditingLibrary
+        mat.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+        mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+        mat.set_editor_property("two_sided", True)
+        set_prop(mat, ["used_with_skeletal_mesh"], True)
+        color = mel.create_material_expression(mat, unreal.MaterialExpressionConstant3Vector, -350, 0)
+        color.set_editor_property("constant", unreal.LinearColor(2.0, 0.04, 0.02, 1.0))
+        mel.connect_material_property(color, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+        opacity = mel.create_material_expression(mat, unreal.MaterialExpressionConstant, -350, 220)
+        opacity.set_editor_property("r", 0.45)
+        mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
+        mel.recompile_material(mat)
+        eal.save_asset(mat_path, only_if_is_dirty=False)
+
+    for bp_name in ("BP_Vowless", "BP_AshboundSoldier"):
+        cdo, _ = bp_cdo(bp_name)
+        set_cdo_montage(cdo, "hit_flash_material", mat)
+        compile_and_save(unreal.load_asset(BP_DIR + "/" + bp_name), BP_DIR + "/" + bp_name)
+
+
 # ---------------------------------------------------------------------- Map
 
 def spawn(actor_subsys, cls, loc, rot=unreal.Rotator(0, 0, 0)):
@@ -333,6 +364,7 @@ def main():
     make_gamemode_bp()
     make_attack_montages()
     make_reaction_montages()
+    make_hitflash_material()
     make_map()
     eal.save_directory(ROOT, only_if_is_dirty=False, recursive=True)
 

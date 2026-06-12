@@ -297,9 +297,9 @@ void AAV_EnemyBase::HandleAttackSequenceFinished()
 APawn* AAV_EnemyBase::FindPlayerIfDetectable() const
 {
 	AAV_PlayerCharacter* Player = Cast<AAV_PlayerCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
-	if (!Player || !Player->IsAlive())
+	if (!Player || !Player->IsAlive() || Player->IsResting())
 	{
-		return nullptr;
+		return nullptr; // a player seated at an altar is beneath notice
 	}
 
 	const float DistSq = FVector::DistSquared(GetActorLocation(), Player->GetActorLocation());

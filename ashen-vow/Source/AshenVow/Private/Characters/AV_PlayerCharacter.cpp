@@ -16,6 +16,7 @@
 #include "InputModifiers.h"
 #include "InputActionValue.h"
 #include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 #include "Engine/LocalPlayer.h"
 
 namespace
@@ -131,7 +132,7 @@ void AAV_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 	if (JumpAction)
 	{
-		Input->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
+		Input->BindAction(JumpAction, ETriggerEvent::Started, this, &AAV_PlayerCharacter::Input_Jump);
 		Input->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 	}
 }
@@ -182,8 +183,13 @@ void AAV_PlayerCharacter::CreateDefaultInputAssetsIfNeeded()
 		Mouse.Modifiers.Add(NegY);
 	}
 
+	// Souls scheme: tap Shift = dodge roll, hold Shift = sprint, Space = jump.
 	DefaultMappingContext->MapKey(SprintAction, EKeys::LeftShift);
-	DefaultMappingContext->MapKey(DodgeAction, EKeys::SpaceBar);
+	if (!JumpAction)
+	{
+		JumpAction = MakeRuntimeAction(this, EInputActionValueType::Boolean);
+	}
+	DefaultMappingContext->MapKey(JumpAction, EKeys::SpaceBar);
 	DefaultMappingContext->MapKey(LightAttackAction, EKeys::LeftMouseButton);
 	DefaultMappingContext->MapKey(HeavyAttackAction, EKeys::RightMouseButton);
 	DefaultMappingContext->MapKey(InteractAction, EKeys::F);
@@ -242,14 +248,34 @@ void AAV_PlayerCharacter::Input_Look(const FInputActionValue& Value)
 void AAV_PlayerCharacter::Input_SprintStart(const FInputActionValue& Value)
 {
 	bWantsToSprint = true;
+	SprintPressTime = GetWorld()->GetTimeSeconds();
 }
 
 void AAV_PlayerCharacter::Input_SprintStop(const FInputActionValue& Value)
 {
 	bWantsToSprint = false;
+
+	// Souls rule: a quick tap of the sprint key is a dodge roll.
+	if (GetWorld()->GetTimeSeconds() - SprintPressTime <= SprintTapDodgeThreshold)
+	{
+		TryDodge();
+	}
+}
+
+void AAV_PlayerCharacter::Input_Jump(const FInputActionValue& Value)
+{
+	if (ActionState == EAV_ActionState::Idle && IsAlive() && !bResting)
+	{
+		Jump();
+	}
 }
 
 void AAV_PlayerCharacter::Input_Dodge(const FInputActionValue& Value)
+{
+	TryDodge();
+}
+
+void AAV_PlayerCharacter::TryDodge()
 {
 	if (ActionState != EAV_ActionState::Idle || !IsAlive())
 	{
@@ -303,6 +329,11 @@ void AAV_PlayerCharacter::Input_HeavyAttack(const FInputActionValue& Value)
 
 void AAV_PlayerCharacter::Input_Interact(const FInputActionValue& Value)
 {
+	if (bResting)
+	{
+		ExitRest(); // F while seated = rise
+		return;
+	}
 	if (ActionState == EAV_ActionState::Idle && IsAlive())
 	{
 		InteractionComponent->TryInteract();
@@ -333,7 +364,7 @@ void AAV_PlayerCharacter::Input_UseFlask(const FInputActionValue& Value)
 
 void AAV_PlayerCharacter::Input_ToggleLockOn(const FInputActionValue& Value)
 {
-	if (IsAlive())
+	if (IsAlive() && !bResting)
 	{
 		LockOnComponent->ToggleLockOn();
 	}
@@ -508,6 +539,7 @@ void AAV_PlayerCharacter::StartBufferedAttackIfAny()
 
 void AAV_PlayerCharacter::HandleDeath(AActor* Victim, AActor* Killer)
 {
+	ExitRest(); // clears the held kneel pose so the death anim can play
 	HealthComponent->SetInvulnerable(false);
 	DodgePhase = -1;
 	bBufferedLight = bBufferedHeavy = false;
@@ -527,6 +559,7 @@ void AAV_PlayerCharacter::ResetForRespawn(const FTransform& RespawnTransform)
 	DodgePhase = -1;
 	LightComboIndex = 0;
 	bBufferedLight = bBufferedHeavy = false;
+	bResting = false;
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
@@ -551,7 +584,7 @@ void AAV_PlayerCharacter::RestoreAtAltar()
 
 void AAV_PlayerCharacter::PlayRestSequence(const FVector& AltarLocation)
 {
-	if (ActionState != EAV_ActionState::Idle || !IsAlive())
+	if (ActionState != EAV_ActionState::Idle || !IsAlive() || bResting)
 	{
 		return;
 	}
@@ -562,16 +595,42 @@ void AAV_PlayerCharacter::PlayRestSequence(const FVector& AltarLocation)
 	LockOnComponent->ReleaseTarget();
 
 	SetActionState(EAV_ActionState::Interacting);
+	bResting = true;
 	PlayMontageIfSet(RestMontage, RestMontagePlayRate);
-	GetWorldTimerManager().SetTimer(RestTimer, this, &AAV_PlayerCharacter::FinishRest, RestDuration, false);
+
+	if (RestMontage)
+	{
+		// Freeze at the deepest point of the kneel and hold the pose until ExitRest.
+		const float RealDuration = RestMontage->GetPlayLength() / FMath::Max(0.05f, RestMontagePlayRate);
+		GetWorldTimerManager().SetTimer(RestTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			if (bResting && GetMesh())
+			{
+				GetMesh()->bPauseAnims = true;
+			}
+		}), RealDuration * RestPoseFreezeFraction, false);
+	}
 }
 
-void AAV_PlayerCharacter::FinishRest()
+void AAV_PlayerCharacter::ExitRest()
 {
-	if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
+	if (!bResting)
 	{
-		AnimInstance->StopAllMontages(0.25f);
+		return;
 	}
+
+	bResting = false;
+	GetWorldTimerManager().ClearTimer(RestTimer);
+
+	if (GetMesh())
+	{
+		GetMesh()->bPauseAnims = false;
+		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		{
+			AnimInstance->StopAllMontages(0.3f); // blends back up to standing
+		}
+	}
+
 	if (ActionState == EAV_ActionState::Interacting)
 	{
 		SetActionState(EAV_ActionState::Idle);

@@ -8,6 +8,7 @@
 class UAV_HealthComponent;
 class UAV_StaminaComponent;
 class UAV_MeleeCombatComponent;
+class UMaterialInterface;
 
 /**
  * Shared base for the player, enemies, and bosses.
@@ -97,10 +98,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Animation")
 	TObjectPtr<UAnimMontage> DeathMontage;
 
+	/** Translucent red overlay flashed over the mesh when this character is hit. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Animation")
+	TObjectPtr<UMaterialInterface> HitFlashMaterial;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Animation", meta = (ClampMin = "0.02"))
+	float HitFlashDuration = 0.12f;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AshenVow|Character")
 	EAV_ActionState ActionState = EAV_ActionState::Idle;
 
 private:
 	FTimerHandle StaggerTimer;
 	FTimerHandle DeathPoseTimer;
+	FTimerHandle HitFlashTimer;
 };

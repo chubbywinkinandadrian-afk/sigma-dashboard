@@ -3,6 +3,7 @@
 #include "Components/AV_StaminaComponent.h"
 #include "Components/AV_MeleeCombatComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
@@ -47,6 +48,19 @@ void AAV_CharacterBase::HandleDamaged(float DamageAmount, const FAV_DamageInfo& 
 	if (IsAlive() && ActionState != EAV_ActionState::Attacking)
 	{
 		PlayMontageIfSet(HitReactMontage);
+	}
+
+	// Red flash on the body — shows even mid-attack, where the flinch is suppressed.
+	if (HitFlashMaterial && GetMesh())
+	{
+		GetMesh()->SetOverlayMaterial(HitFlashMaterial);
+		GetWorldTimerManager().SetTimer(HitFlashTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			if (GetMesh())
+			{
+				GetMesh()->SetOverlayMaterial(nullptr);
+			}
+		}), HitFlashDuration, false);
 	}
 
 	OnDamagedBP(DamageAmount, DamageInfo);

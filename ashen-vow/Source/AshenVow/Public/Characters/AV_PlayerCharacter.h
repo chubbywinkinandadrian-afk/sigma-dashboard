@@ -43,9 +43,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AshenVow|Player")
 	void RestoreAtAltar();
 
-	/** Kneel at the altar: face it, lock input, play the rest montage, rise. */
+	/** Kneel at the altar and stay seated until ExitRest (press F again to rise). */
 	UFUNCTION(BlueprintCallable, Category = "AshenVow|Player")
 	void PlayRestSequence(const FVector& AltarLocation);
+
+	/** Stand back up from the altar rest. */
+	UFUNCTION(BlueprintCallable, Category = "AshenVow|Player")
+	void ExitRest();
+
+	/** True while seated at an altar — enemies will not detect a resting player. */
+	UFUNCTION(BlueprintPure, Category = "AshenVow|Player")
+	bool IsResting() const { return bResting; }
 
 	UFUNCTION(BlueprintCallable, Category = "AshenVow|Player")
 	void AddAsh(int32 Amount);
@@ -91,6 +99,7 @@ protected:
 	void Input_SprintStart(const FInputActionValue& Value);
 	void Input_SprintStop(const FInputActionValue& Value);
 	void Input_Dodge(const FInputActionValue& Value);
+	void Input_Jump(const FInputActionValue& Value);
 	void Input_LightAttack(const FInputActionValue& Value);
 	void Input_HeavyAttack(const FInputActionValue& Value);
 	void Input_Interact(const FInputActionValue& Value);
@@ -168,6 +177,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Movement", meta = (ClampMin = "0.0"))
 	float SprintStaminaDrainPerSecond = 12.f;
 
+	/** Releasing Shift within this window counts as a tap = dodge roll. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Dodge", meta = (ClampMin = "0.05", ClampMax = "1.0"))
+	float SprintTapDodgeThreshold = 0.3f;
+
 	// ---- Dodge tuning ----
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Dodge", meta = (ClampMin = "0.0"))
 	float DodgeStaminaCost = 25.f;
@@ -196,9 +209,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Animation", meta = (ClampMin = "0.05"))
 	float RestMontagePlayRate = 0.25f;
 
-	/** Seconds the player stays kneeling at the altar. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Animation", meta = (ClampMin = "0.5"))
-	float RestDuration = 2.5f;
+	/** Fraction of the rest montage at which the pose freezes (deepest kneel point). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Animation", meta = (ClampMin = "0.05", ClampMax = "0.95"))
+	float RestPoseFreezeFraction = 0.3f;
 
 	// ---- Attacks (data-driven; tune in editor) ----
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Attacks")
@@ -223,15 +236,17 @@ private:
 	void TickSprint(float DeltaTime);
 	bool TryStartAttack(bool bHeavy);
 	void StartBufferedAttackIfAny();
-	void FinishRest();
+	void TryDodge();
 
 	int32 AshCount = 0;
 	int32 FlaskCharges = 3;
 	float LastFlaskUseTime = -10.f;
+	bool bResting = false;
 	FTimerHandle RestTimer;
 
-	// Sprint
+	// Sprint (tap = dodge, hold = sprint)
 	bool bWantsToSprint = false;
+	float SprintPressTime = -10.f;
 
 	// Dodge state
 	float DodgeTimeElapsed = 0.f;
