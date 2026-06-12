@@ -24,6 +24,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "AshenVow|UI")
 	UAV_HUDWidget* GetHUDWidget() const { return HUDWidget; }
 
+	/** True once a WBP death screen is assigned — the canvas HUD then skips its overlay. */
+	UFUNCTION(BlueprintPure, Category = "AshenVow|UI")
+	bool HasDeathScreenWidget() const { return DeathScreenClass != nullptr; }
+
 protected:
 	virtual void BeginPlay() override;
 

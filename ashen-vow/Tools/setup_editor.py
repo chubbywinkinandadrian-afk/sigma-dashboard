@@ -1,0 +1,259 @@
+"""
+ASHEN VOW — one-time editor setup automation (Milestone 1).
+
+Run via Tools/setup_mac.sh, or manually:
+  UnrealEditor-Cmd AshenVow.uproject -run=pythonscript -script=Tools/setup_editor.py
+
+Creates, idempotently (safe to re-run):
+  /Game/AshenVow/Maps/L_CrownlessGate  — ash-field blockout: floor, lighting,
+      fog, PlayerStart, one Ashbound Soldier, one Ashen Altar
+  /Game/AshenVow/Blueprints/BP_Vowless, BP_AshboundSoldier — mannequin mesh +
+      anim BP assigned if the Third Person template content was copied in
+  /Game/AshenVow/Blueprints/BP_AshenAltar, BP_AVGameMode
+
+Every step is wrapped so a single API difference between engine versions
+degrades to a logged warning instead of aborting the whole setup.
+"""
+
+import unreal
+
+ROOT = "/Game/AshenVow"
+BP_DIR = ROOT + "/Blueprints"
+MAP_DIR = ROOT + "/Maps"
+MAP_PATH = MAP_DIR + "/L_CrownlessGate"
+
+eal = unreal.EditorAssetLibrary
+asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
+
+OK = []
+WARN = []
+
+
+def log(msg):
+    unreal.log("[AshenVow] " + msg)
+
+
+def warn(msg):
+    WARN.append(msg)
+    unreal.log_warning("[AshenVow] " + msg)
+
+
+def step(label):
+    def deco(fn):
+        def wrapped(*args, **kwargs):
+            try:
+                result = fn(*args, **kwargs)
+                OK.append(label)
+                log("OK: " + label)
+                return result
+            except Exception as e:  # noqa: BLE001 — degrade, don't abort
+                warn("FAILED: %s (%s)" % (label, e))
+                return None
+        return wrapped
+    return deco
+
+
+def find_asset_by_name(name, hint=""):
+    """Search /Game for an asset whose object name matches exactly."""
+    for path in eal.list_assets("/Game", recursive=True, include_folder=False):
+        clean = str(path).split(".")[0]
+        if clean.rsplit("/", 1)[-1] == name:
+            return clean
+    if hint:
+        warn("Asset '%s' not found (%s)" % (name, hint))
+    return None
+
+
+def set_prop(obj, names, value):
+    """Try several property names (engine versions rename things)."""
+    for n in names:
+        try:
+            obj.set_editor_property(n, value)
+            return True
+        except Exception:
+            continue
+    return False
+
+
+# ---------------------------------------------------------------- Blueprints
+
+def create_blueprint(name, parent_class_path):
+    asset_path = BP_DIR + "/" + name
+    if eal.does_asset_exist(asset_path):
+        log("Exists, reusing: " + asset_path)
+        return unreal.load_asset(asset_path)
+    parent = unreal.load_class(None, parent_class_path)
+    if parent is None:
+        raise RuntimeError("parent class not found: " + parent_class_path)
+    factory = unreal.BlueprintFactory()
+    factory.set_editor_property("parent_class", parent)
+    bp = asset_tools.create_asset(name, BP_DIR, None, factory)
+    if bp is None:
+        raise RuntimeError("create_asset returned None for " + name)
+    return bp
+
+
+def bp_cdo(name):
+    gen = unreal.load_object(None, "%s/%s.%s_C" % (BP_DIR, name, name))
+    if gen is None:
+        raise RuntimeError("generated class missing for " + name)
+    return unreal.get_default_object(gen), gen
+
+
+def compile_and_save(bp, asset_path):
+    try:
+        unreal.BlueprintEditorLibrary.compile_blueprint(bp)
+    except Exception:
+        pass
+    eal.save_asset(asset_path, only_if_is_dirty=False)
+
+
+def assign_mannequin(cdo, mesh_path, abp_path):
+    mesh_comp = cdo.get_editor_property("mesh")
+    if mesh_path:
+        mesh = unreal.load_asset(mesh_path)
+        if not set_prop(mesh_comp, ["skeletal_mesh_asset", "skeletal_mesh"], mesh):
+            warn("could not set skeletal mesh on " + str(cdo))
+    set_prop(mesh_comp, ["relative_location"], unreal.Vector(0, 0, -89))
+    set_prop(mesh_comp, ["relative_rotation"], unreal.Rotator(0, 0, -90))
+    if abp_path:
+        abp_class = unreal.load_object(None, abp_path + "_C")
+        if abp_class:
+            set_prop(mesh_comp, ["anim_class"], abp_class)
+            set_prop(mesh_comp, ["animation_mode"], unreal.AnimationMode.ANIMATION_BLUEPRINT)
+
+
+@step("character Blueprints (BP_Vowless, BP_AshboundSoldier)")
+def make_character_bps():
+    mesh_path = find_asset_by_name("SKM_Quinn", "copy Third Person template Content/Characters first") \
+        or find_asset_by_name("SKM_Manny")
+    abp_path = find_asset_by_name("ABP_Quinn") or find_asset_by_name("ABP_Manny")
+
+    for name, parent in (
+        ("BP_Vowless", "/Script/AshenVow.AV_PlayerCharacter"),
+        ("BP_AshboundSoldier", "/Script/AshenVow.AV_AshboundSoldier"),
+    ):
+        bp = create_blueprint(name, parent)
+        cdo, _ = bp_cdo(name)
+        assign_mannequin(cdo, mesh_path, abp_path)
+        compile_and_save(bp, BP_DIR + "/" + name)
+
+
+@step("BP_AshenAltar")
+def make_altar_bp():
+    bp = create_blueprint("BP_AshenAltar", "/Script/AshenVow.AV_AshenAltar")
+    cdo, _ = bp_cdo("BP_AshenAltar")
+    mesh_comp = cdo.get_editor_property("altar_mesh")
+    cube = unreal.load_asset("/Engine/BasicShapes/Cube")
+    set_prop(mesh_comp, ["static_mesh"], cube)
+    set_prop(mesh_comp, ["relative_scale3d"], unreal.Vector(0.9, 0.9, 1.2))
+    compile_and_save(bp, BP_DIR + "/BP_AshenAltar")
+
+
+@step("BP_AVGameMode (pawn -> BP_Vowless)")
+def make_gamemode_bp():
+    bp = create_blueprint("BP_AVGameMode", "/Script/AshenVow.AV_GameMode")
+    cdo, _ = bp_cdo("BP_AVGameMode")
+    vowless = unreal.load_object(None, BP_DIR + "/BP_Vowless.BP_Vowless_C")
+    if vowless:
+        set_prop(cdo, ["default_pawn_class"], vowless)
+    compile_and_save(bp, BP_DIR + "/BP_AVGameMode")
+
+
+# ---------------------------------------------------------------------- Map
+
+def spawn(actor_subsys, cls, loc, rot=unreal.Rotator(0, 0, 0)):
+    return actor_subsys.spawn_actor_from_class(cls, unreal.Vector(*loc), rot)
+
+
+@step("L_CrownlessGate map")
+def make_map():
+    level_subsys = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
+    actor_subsys = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
+
+    if eal.does_asset_exist(MAP_PATH):
+        log("Map exists; loading instead of recreating")
+        level_subsys.load_level(MAP_PATH)
+    else:
+        level_subsys.new_level(MAP_PATH)
+
+        cube = unreal.load_asset("/Engine/BasicShapes/Cube")
+
+        # Ash-field floor: 80m x 80m slab.
+        floor = spawn(actor_subsys, unreal.StaticMeshActor, (0, 0, -50))
+        floor.set_actor_label("Floor_AshField")
+        floor.static_mesh_component.set_static_mesh(cube)
+        floor.set_actor_scale3d(unreal.Vector(80, 80, 1))
+
+        # Pale, low "White Sun" light.
+        sun = spawn(actor_subsys, unreal.DirectionalLight, (0, 0, 1000), unreal.Rotator(-32, 0, 38))
+        sun.set_actor_label("WhiteSun")
+        set_prop(sun.light_component, ["intensity"], 4.0)
+        set_prop(sun.light_component, ["light_color"], unreal.Color(250, 245, 232, 255))
+
+        sky = spawn(actor_subsys, unreal.SkyAtmosphere, (0, 0, 0))
+        sky.set_actor_label("SkyAtmosphere")
+        skylight = spawn(actor_subsys, unreal.SkyLight, (0, 0, 400))
+        skylight.set_actor_label("SkyLight")
+        set_prop(skylight.light_component, ["real_time_capture"], True)
+
+        fog = spawn(actor_subsys, unreal.ExponentialHeightFog, (0, 0, 0))
+        fog.set_actor_label("PaleFog")
+        fog_comp = fog.get_editor_property("component")
+        set_prop(fog_comp, ["fog_density"], 0.04)
+        set_prop(fog_comp, ["fog_inscattering_luminance", "fog_inscattering_color"],
+                 unreal.LinearColor(0.62, 0.60, 0.55, 1.0))
+
+        spawn(actor_subsys, unreal.PlayerStart, (0, 0, 100))
+
+        # Gameplay actors: altar near the start, soldier down the field.
+        altar_cls = unreal.load_object(None, BP_DIR + "/BP_AshenAltar.BP_AshenAltar_C")
+        if altar_cls:
+            altar = spawn(actor_subsys, altar_cls, (450, 350, 60))
+            altar.set_actor_label("AshenAltar_First")
+
+        soldier_cls = unreal.load_object(None, BP_DIR + "/BP_AshboundSoldier.BP_AshboundSoldier_C")
+        if soldier_cls:
+            soldier = spawn(actor_subsys, soldier_cls, (1800, 0, 100))
+            soldier.set_actor_label("AshboundSoldier_01")
+
+        # Navmesh over the whole field (enemies fall back to direct movement without it).
+        try:
+            nav = spawn(actor_subsys, unreal.NavMeshBoundsVolume, (0, 0, 0))
+            nav.set_actor_scale3d(unreal.Vector(45, 45, 10))
+        except Exception as e:
+            warn("NavMeshBoundsVolume could not be placed (%s) — drag one in manually, or rely on direct movement" % e)
+
+    # Point the level at the BP game mode so BP_Vowless (with mesh) is the pawn.
+    try:
+        gm_cls = unreal.load_object(None, BP_DIR + "/BP_AVGameMode.BP_AVGameMode_C")
+        world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
+        for actor in unreal.get_editor_subsystem(unreal.EditorActorSubsystem).get_all_level_actors():
+            if isinstance(actor, unreal.WorldSettings) and gm_cls:
+                set_prop(actor, ["default_game_mode"], gm_cls)
+    except Exception as e:
+        warn("could not set per-map game mode override (%s) — config default still applies" % e)
+
+    level_subsys.save_current_level()
+
+
+def main():
+    for d in (ROOT, BP_DIR, MAP_DIR):
+        if not eal.does_directory_exist(d):
+            eal.make_directory(d)
+
+    make_character_bps()
+    make_altar_bp()
+    make_gamemode_bp()
+    make_map()
+    eal.save_directory(ROOT, only_if_is_dirty=False, recursive=True)
+
+    log("================ SETUP SUMMARY ================")
+    for s in OK:
+        log("  done: " + s)
+    for w in WARN:
+        unreal.log_warning("  check: " + w)
+    log("===============================================")
+
+
+main()

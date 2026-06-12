@@ -1,5 +1,6 @@
 #include "Core/AV_GameMode.h"
 #include "Core/AV_PlayerController.h"
+#include "UI/AV_GameHUD.h"
 #include "Characters/AV_PlayerCharacter.h"
 #include "Characters/AV_EnemyBase.h"
 #include "World/AV_AshenAltar.h"
@@ -12,6 +13,7 @@ AAV_GameMode::AAV_GameMode()
 {
 	DefaultPawnClass = AAV_PlayerCharacter::StaticClass();
 	PlayerControllerClass = AAV_PlayerController::StaticClass();
+	HUDClass = AAV_GameHUD::StaticClass(); // canvas placeholder HUD; UMG replaces it later
 }
 
 void AAV_GameMode::BeginPlay()

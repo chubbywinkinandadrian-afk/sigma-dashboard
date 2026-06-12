@@ -39,6 +39,19 @@ F interact · R flask · Q lock-on.
 ## One-time editor setup (~30 minutes)
 
 The C++ classes are playable as-is; Blueprints only add visuals and UI.
+A canvas-drawn placeholder HUD (`AAV_GameHUD`) ships in C++, so **no UMG widgets
+are required** — steps 4 (UI) below are optional polish.
+
+### Mac quick path (automated)
+1. Install **Xcode** from the App Store (full Xcode — Command Line Tools are not enough), then:
+   `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer && sudo xcodebuild -license accept`
+2. Install the **Epic Games Launcher** (epicgames.com), sign in, and install **Unreal Engine 5.x**.
+3. Run `./Tools/setup_mac.sh` — it points the `.uproject` at your engine version,
+   copies the mannequin from the Third Person template, builds the editor target,
+   and runs `Tools/setup_editor.py` to create the map, lighting, and all Blueprints.
+4. `open AshenVow.uproject` and press Play.
+
+The manual steps below are the Windows path / reference for what the script does.
 
 ### 1. Generate and build
 1. Install UE 5.x (the `.uproject` says `5.6` — edit `EngineAssociation` to match your version).
