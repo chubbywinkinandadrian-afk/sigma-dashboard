@@ -170,30 +170,38 @@ def make_gamemode_bp():
     compile_and_save(bp, BP_DIR + "/BP_AVGameMode")
 
 
+ANIM_DIR = ROOT + "/Anims"
+
+
+def make_montage(seq_name, montage_name):
+    """Create (or reuse) a montage in /Game/AshenVow/Anims from a template sequence."""
+    if not eal.does_directory_exist(ANIM_DIR):
+        eal.make_directory(ANIM_DIR)
+    asset_path = ANIM_DIR + "/" + montage_name
+    if eal.does_asset_exist(asset_path):
+        return unreal.load_asset(asset_path)
+    seq_path = find_asset_by_name(seq_name)
+    if not seq_path:
+        warn("animation '%s' not found, montage skipped" % seq_name)
+        return None
+    seq = unreal.load_asset(seq_path)
+    factory = unreal.AnimMontageFactory()
+    set_prop(factory, ["target_skeleton"], seq.get_editor_property("skeleton"))
+    if not set_prop(factory, ["source_animation"], seq):
+        warn("AnimMontageFactory lacks source_animation; montage may be empty")
+    montage = asset_tools.create_asset(montage_name, ANIM_DIR, None, factory)
+    if montage:
+        eal.save_asset(asset_path, only_if_is_dirty=False)
+    return montage
+
+
+def set_cdo_montage(cdo, prop_name, montage):
+    if montage and not set_prop(cdo, [prop_name], montage):
+        warn("could not set %s" % prop_name)
+
+
 @step("attack montages (template MM_Attack anims -> player + soldier)")
 def make_attack_montages():
-    anim_dir = ROOT + "/Anims"
-    if not eal.does_directory_exist(anim_dir):
-        eal.make_directory(anim_dir)
-
-    def make_montage(seq_name, montage_name):
-        asset_path = anim_dir + "/" + montage_name
-        if eal.does_asset_exist(asset_path):
-            return unreal.load_asset(asset_path)
-        seq_path = find_asset_by_name(seq_name)
-        if not seq_path:
-            warn("animation '%s' not found, montage skipped" % seq_name)
-            return None
-        seq = unreal.load_asset(seq_path)
-        factory = unreal.AnimMontageFactory()
-        set_prop(factory, ["target_skeleton"], seq.get_editor_property("skeleton"))
-        if not set_prop(factory, ["source_animation"], seq):
-            warn("AnimMontageFactory lacks source_animation; montage may be empty")
-        montage = asset_tools.create_asset(montage_name, anim_dir, None, factory)
-        if montage:
-            eal.save_asset(asset_path, only_if_is_dirty=False)
-        return montage
-
     light1 = make_montage("MM_Attack_01", "M_Attack_Light1")
     light2 = make_montage("MM_Attack_02", "M_Attack_Light2")
     heavy = make_montage("MM_ChargedAttack", "M_Attack_Heavy")
@@ -217,6 +225,25 @@ def make_attack_montages():
     if lights:
         assign("BP_Vowless", "light_attack_combo", lights, heavy)
         assign("BP_AshboundSoldier", "attack_combo", lights)
+
+
+@step("reaction montages (hit react / stagger / death / dodge / rest)")
+def make_reaction_montages():
+    hit_light = make_montage("MM_HitReact_Front_Lgt_01", "M_HitReact_Light")
+    hit_med = make_montage("MM_HitReact_Front_Med_01", "M_HitReact_Medium")
+    death = make_montage("MM_Death_Front_01", "M_Death")
+    dodge = make_montage("MM_Dash", "M_Dodge")
+    rest = make_montage("MM_Land", "M_Rest")  # slow-played kneel placeholder for sitting
+
+    for bp_name in ("BP_Vowless", "BP_AshboundSoldier"):
+        cdo, _ = bp_cdo(bp_name)
+        set_cdo_montage(cdo, "hit_react_montage", hit_light)
+        set_cdo_montage(cdo, "stagger_montage", hit_med)
+        set_cdo_montage(cdo, "death_montage", death)
+        if bp_name == "BP_Vowless":
+            set_cdo_montage(cdo, "dodge_montage", dodge)
+            set_cdo_montage(cdo, "rest_montage", rest)
+        compile_and_save(unreal.load_asset(BP_DIR + "/" + bp_name), BP_DIR + "/" + bp_name)
 
 
 # ---------------------------------------------------------------------- Map
@@ -305,6 +332,7 @@ def main():
     make_altar_bp()
     make_gamemode_bp()
     make_attack_montages()
+    make_reaction_montages()
     make_map()
     eal.save_directory(ROOT, only_if_is_dirty=False, recursive=True)
 

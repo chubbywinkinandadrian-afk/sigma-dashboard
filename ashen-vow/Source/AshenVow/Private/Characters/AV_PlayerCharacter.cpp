@@ -15,6 +15,7 @@
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
 #include "InputActionValue.h"
+#include "Animation/AnimInstance.h"
 #include "Engine/LocalPlayer.h"
 
 namespace
@@ -208,10 +209,11 @@ void AAV_PlayerCharacter::Input_Move(const FInputActionValue& Value)
 	{
 		return;
 	}
-	// Movement is committed during dodge/attack/stagger — no steering mid-action.
+	// Movement is committed during dodge/attack/stagger/rest — no steering mid-action.
 	if (ActionState == EAV_ActionState::Dodging ||
 		ActionState == EAV_ActionState::Attacking ||
-		ActionState == EAV_ActionState::Staggered)
+		ActionState == EAV_ActionState::Staggered ||
+		ActionState == EAV_ActionState::Interacting)
 	{
 		return;
 	}
@@ -279,6 +281,7 @@ void AAV_PlayerCharacter::Input_Dodge(const FInputActionValue& Value)
 	SetActionState(EAV_ActionState::Dodging);
 	DodgePhase = 0;
 	DodgeTimeElapsed = 0.f;
+	PlayMontageIfSet(DodgeMontage);
 	OnDodgeBP(DodgeDirection);
 }
 
@@ -527,6 +530,7 @@ void AAV_PlayerCharacter::ResetForRespawn(const FTransform& RespawnTransform)
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	ResetAnimationState();
 
 	SetActorTransform(RespawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
 	if (Controller)
@@ -543,6 +547,35 @@ void AAV_PlayerCharacter::RestoreAtAltar()
 	StaminaComponent->RestoreFull();
 	FlaskCharges = MaxFlaskCharges;
 	OnFlasksChanged.Broadcast(FlaskCharges, MaxFlaskCharges);
+}
+
+void AAV_PlayerCharacter::PlayRestSequence(const FVector& AltarLocation)
+{
+	if (ActionState != EAV_ActionState::Idle || !IsAlive())
+	{
+		return;
+	}
+
+	const FVector ToAltar = AltarLocation - GetActorLocation();
+	SetActorRotation(FRotator(0.f, ToAltar.Rotation().Yaw, 0.f));
+	GetCharacterMovement()->StopMovementImmediately();
+	LockOnComponent->ReleaseTarget();
+
+	SetActionState(EAV_ActionState::Interacting);
+	PlayMontageIfSet(RestMontage, RestMontagePlayRate);
+	GetWorldTimerManager().SetTimer(RestTimer, this, &AAV_PlayerCharacter::FinishRest, RestDuration, false);
+}
+
+void AAV_PlayerCharacter::FinishRest()
+{
+	if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
+	{
+		AnimInstance->StopAllMontages(0.25f);
+	}
+	if (ActionState == EAV_ActionState::Interacting)
+	{
+		SetActionState(EAV_ActionState::Idle);
+	}
 }
 
 void AAV_PlayerCharacter::AddAsh(int32 Amount)

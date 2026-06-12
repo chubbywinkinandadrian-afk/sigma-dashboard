@@ -56,6 +56,12 @@ protected:
 	virtual void EnterStagger(float Duration);
 	virtual void ExitStagger();
 
+	/** Plays a montage on the mesh if set. Returns its play length (0 if not played). */
+	float PlayMontageIfSet(UAnimMontage* Montage, float PlayRate = 1.f);
+
+	/** Un-pause anims and stop montages (respawn cleanup). */
+	void ResetAnimationState();
+
 	/** Placeholder animation/SFX hooks — implement in Blueprint with montages or effects. */
 	UFUNCTION(BlueprintImplementableEvent, Category = "AshenVow|Character", meta = (DisplayName = "On Damaged (BP)"))
 	void OnDamagedBP(float DamageAmount, const FAV_DamageInfo& DamageInfo);
@@ -79,9 +85,22 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Combat", meta = (ClampMin = "0.1"))
 	float StaggerDuration = 0.7f;
 
+	/** Quick flinch on any hit that doesn't interrupt an in-progress attack. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Animation")
+	TObjectPtr<UAnimMontage> HitReactMontage;
+
+	/** Bigger reaction when poise breaks (stagger). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Animation")
+	TObjectPtr<UAnimMontage> StaggerMontage;
+
+	/** Death animation; the pose freezes on the final frame. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Animation")
+	TObjectPtr<UAnimMontage> DeathMontage;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AshenVow|Character")
 	EAV_ActionState ActionState = EAV_ActionState::Idle;
 
 private:
 	FTimerHandle StaggerTimer;
+	FTimerHandle DeathPoseTimer;
 };

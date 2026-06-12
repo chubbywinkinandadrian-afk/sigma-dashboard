@@ -4,6 +4,8 @@
 #include "Components/AV_MeleeCombatComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 #include "TimerManager.h"
 
 AAV_CharacterBase::AAV_CharacterBase()
@@ -40,6 +42,13 @@ void AAV_CharacterBase::SetActionState(EAV_ActionState NewState)
 
 void AAV_CharacterBase::HandleDamaged(float DamageAmount, const FAV_DamageInfo& DamageInfo)
 {
+	// Visible flinch on every hit — but never interrupt this character's own
+	// attack animation (attack commitment stays intact; stagger handles big hits).
+	if (IsAlive() && ActionState != EAV_ActionState::Attacking)
+	{
+		PlayMontageIfSet(HitReactMontage);
+	}
+
 	OnDamagedBP(DamageAmount, DamageInfo);
 }
 
@@ -57,6 +66,19 @@ void AAV_CharacterBase::HandleDeath(AActor* Victim, AActor* Killer)
 	GetCharacterMovement()->DisableMovement();
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 
+	const float DeathAnimLength = PlayMontageIfSet(DeathMontage);
+	if (DeathAnimLength > 0.f)
+	{
+		// Freeze on the corpse pose just before the montage blends back out.
+		GetWorldTimerManager().SetTimer(DeathPoseTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			if (GetMesh())
+			{
+				GetMesh()->bPauseAnims = true;
+			}
+		}), DeathAnimLength * 0.92f, false);
+	}
+
 	OnDeathBP(Killer);
 }
 
@@ -69,6 +91,7 @@ void AAV_CharacterBase::EnterStagger(float Duration)
 
 	MeleeCombatComponent->AbortAttack();
 	SetActionState(EAV_ActionState::Staggered);
+	PlayMontageIfSet(StaggerMontage);
 	OnStaggeredBP(Duration);
 
 	GetWorldTimerManager().SetTimer(StaggerTimer, this, &AAV_CharacterBase::ExitStagger, Duration, false);
@@ -79,5 +102,32 @@ void AAV_CharacterBase::ExitStagger()
 	if (ActionState == EAV_ActionState::Staggered)
 	{
 		SetActionState(EAV_ActionState::Idle);
+	}
+}
+
+float AAV_CharacterBase::PlayMontageIfSet(UAnimMontage* Montage, float PlayRate)
+{
+	if (!Montage)
+	{
+		return 0.f;
+	}
+	if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
+	{
+		const float MontageLength = AnimInstance->Montage_Play(Montage, PlayRate);
+		return MontageLength;
+	}
+	return 0.f;
+}
+
+void AAV_CharacterBase::ResetAnimationState()
+{
+	GetWorldTimerManager().ClearTimer(DeathPoseTimer);
+	if (GetMesh())
+	{
+		GetMesh()->bPauseAnims = false;
+		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		{
+			AnimInstance->StopAllMontages(0.2f);
+		}
 	}
 }

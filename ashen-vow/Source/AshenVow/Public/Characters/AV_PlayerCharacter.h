@@ -43,6 +43,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AshenVow|Player")
 	void RestoreAtAltar();
 
+	/** Kneel at the altar: face it, lock input, play the rest montage, rise. */
+	UFUNCTION(BlueprintCallable, Category = "AshenVow|Player")
+	void PlayRestSequence(const FVector& AltarLocation);
+
 	UFUNCTION(BlueprintCallable, Category = "AshenVow|Player")
 	void AddAsh(int32 Amount);
 
@@ -181,6 +185,21 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Dodge", meta = (ClampMin = "100.0"))
 	float DodgeSpeed = 820.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Animation")
+	TObjectPtr<UAnimMontage> DodgeMontage;
+
+	// ---- Altar rest ----
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Animation")
+	TObjectPtr<UAnimMontage> RestMontage;
+
+	/** Rest montage is slowed to read as a kneel (placeholder until a real sit anim). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Animation", meta = (ClampMin = "0.05"))
+	float RestMontagePlayRate = 0.25f;
+
+	/** Seconds the player stays kneeling at the altar. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Animation", meta = (ClampMin = "0.5"))
+	float RestDuration = 2.5f;
+
 	// ---- Attacks (data-driven; tune in editor) ----
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Attacks")
 	TArray<FAV_AttackData> LightAttackCombo;
@@ -204,10 +223,12 @@ private:
 	void TickSprint(float DeltaTime);
 	bool TryStartAttack(bool bHeavy);
 	void StartBufferedAttackIfAny();
+	void FinishRest();
 
 	int32 AshCount = 0;
 	int32 FlaskCharges = 3;
 	float LastFlaskUseTime = -10.f;
+	FTimerHandle RestTimer;
 
 	// Sprint
 	bool bWantsToSprint = false;

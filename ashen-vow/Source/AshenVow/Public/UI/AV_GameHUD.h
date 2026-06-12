@@ -37,4 +37,10 @@ private:
 	void DrawBar(float X, float Y, float Width, float Height, float Percent, const FLinearColor& FillColor);
 	void DrawCenteredText(const FString& Text, float CenterX, float Y, const FLinearColor& Color, UFont* Font, float Scale);
 	void DrawDeathOverlay();
+	void DrawEnemyHealthBars();
+	void DrawDamageFlash(float CurrentHealth);
+
+	/** Red screen edge flash when the player takes damage. */
+	float DamageFlashAlpha = 0.f;
+	float LastSeenPlayerHealth = -1.f;
 };

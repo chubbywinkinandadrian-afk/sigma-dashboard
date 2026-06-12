@@ -438,6 +438,7 @@ void AAV_EnemyBase::ResetForRespawn()
 	ActionState = EAV_ActionState::Idle; // direct reset — Dead is otherwise terminal
 	HealthComponent->ResetVitals();
 	MeleeCombatComponent->AbortAttack();
+	ResetAnimationState();
 
 	TargetPlayer = nullptr;
 	bAttackInProgress = false;

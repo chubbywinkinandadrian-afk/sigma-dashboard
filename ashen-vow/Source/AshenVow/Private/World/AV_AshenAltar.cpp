@@ -44,6 +44,7 @@ void AAV_AshenAltar::Interact_Implementation(AActor* Interactor)
 		GameMode->ResetWorldEnemies();
 	}
 
+	Player->PlayRestSequence(GetActorLocation());
 	Player->RestoreAtAltar();
 
 	OnRested.Broadcast(Player);

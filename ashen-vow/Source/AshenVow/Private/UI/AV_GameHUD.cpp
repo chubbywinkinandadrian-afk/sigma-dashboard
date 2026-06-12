@@ -1,5 +1,7 @@
 #include "UI/AV_GameHUD.h"
 #include "Characters/AV_PlayerCharacter.h"
+#include "Characters/AV_EnemyBase.h"
+#include "EngineUtils.h"
 #include "Components/AV_HealthComponent.h"
 #include "Components/AV_StaminaComponent.h"
 #include "Components/AV_LockOnComponent.h"
@@ -35,6 +37,9 @@ void AAV_GameHUD::DrawHUD()
 		}
 		return;
 	}
+
+	DrawDamageFlash(Player->GetHealthComponent()->GetCurrentHealth());
+	DrawEnemyHealthBars();
 
 	if (!bUMGHudActive)
 	{
@@ -106,4 +111,65 @@ void AAV_GameHUD::DrawDeathOverlay()
 	DrawCenteredText(TEXT("YOU ARE FORGOTTEN"),
 		Canvas->SizeX * 0.5f, Canvas->SizeY * 0.45f,
 		FLinearColor(0.78f, 0.74f, 0.66f), GEngine->GetLargeFont(), 2.2f);
+}
+
+void AAV_GameHUD::DrawEnemyHealthBars()
+{
+	const APawn* OwnerPawn = GetOwningPawn();
+	UWorld* World = GetWorld();
+	if (!OwnerPawn || !World)
+	{
+		return;
+	}
+
+	for (TActorIterator<AAV_EnemyBase> It(World); It; ++It)
+	{
+		AAV_EnemyBase* Enemy = *It;
+		const UAV_HealthComponent* Health = Enemy->GetHealthComponent();
+		if (!Enemy->IsAlive() || !Health)
+		{
+			continue;
+		}
+		if (FVector::DistSquared(OwnerPawn->GetActorLocation(), Enemy->GetActorLocation()) > FMath::Square(3000.f))
+		{
+			continue;
+		}
+
+		// Show only once the enemy matters: aggroed, or already wounded.
+		const EAV_EnemyState State = Enemy->GetEnemyState();
+		const bool bAggroed = State == EAV_EnemyState::Chase || State == EAV_EnemyState::Combat;
+		const bool bWounded = Health->GetCurrentHealth() < Health->GetMaxHealth();
+		if (!bAggroed && !bWounded)
+		{
+			continue;
+		}
+
+		const FVector HeadPoint = Enemy->GetActorLocation() + FVector(0.f, 0.f, 110.f);
+		const FVector Projected = Project(HeadPoint);
+		if (Projected.Z <= 0.f)
+		{
+			continue; // behind the camera
+		}
+
+		const float BarWidth = 95.f;
+		const float BarHeight = 7.f;
+		DrawRect(BarBackColor, Projected.X - BarWidth * 0.5f - 1.f, Projected.Y - 1.f, BarWidth + 2.f, BarHeight + 2.f);
+		DrawRect(FLinearColor(0.55f, 0.10f, 0.07f),
+			Projected.X - BarWidth * 0.5f, Projected.Y, BarWidth * Health->GetHealthPercent(), BarHeight);
+	}
+}
+
+void AAV_GameHUD::DrawDamageFlash(float CurrentHealth)
+{
+	if (LastSeenPlayerHealth > 0.f && CurrentHealth < LastSeenPlayerHealth)
+	{
+		DamageFlashAlpha = 0.38f;
+	}
+	LastSeenPlayerHealth = CurrentHealth;
+
+	if (DamageFlashAlpha > 0.f)
+	{
+		DrawRect(FLinearColor(0.45f, 0.02f, 0.02f, DamageFlashAlpha), 0.f, 0.f, Canvas->SizeX, Canvas->SizeY);
+		DamageFlashAlpha = FMath::Max(0.f, DamageFlashAlpha - 1.4f * GetWorld()->GetDeltaSeconds());
+	}
 }
