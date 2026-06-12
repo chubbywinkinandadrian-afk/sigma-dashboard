@@ -54,11 +54,18 @@ def step(label):
 
 
 def find_asset_by_name(name, hint=""):
-    """Search /Game for an asset whose object name matches exactly."""
+    """Search /Game for an asset by exact object name, else by prefix
+    (5.6+ renamed SKM_Quinn -> SKM_Quinn_Simple etc.)."""
+    prefix_hit = None
     for path in eal.list_assets("/Game", recursive=True, include_folder=False):
         clean = str(path).split(".")[0]
-        if clean.rsplit("/", 1)[-1] == name:
+        base = clean.rsplit("/", 1)[-1]
+        if base == name:
             return clean
+        if prefix_hit is None and base.startswith(name):
+            prefix_hit = clean
+    if prefix_hit:
+        return prefix_hit
     if hint:
         warn("Asset '%s' not found (%s)" % (name, hint))
     return None
@@ -117,7 +124,8 @@ def assign_mannequin(cdo, mesh_path, abp_path):
     set_prop(mesh_comp, ["relative_location"], unreal.Vector(0, 0, -89))
     set_prop(mesh_comp, ["relative_rotation"], unreal.Rotator(0, 0, -90))
     if abp_path:
-        abp_class = unreal.load_object(None, abp_path + "_C")
+        abp_name = abp_path.rsplit("/", 1)[-1]
+        abp_class = unreal.load_object(None, "%s.%s_C" % (abp_path, abp_name))
         if abp_class:
             set_prop(mesh_comp, ["anim_class"], abp_class)
             set_prop(mesh_comp, ["animation_mode"], unreal.AnimationMode.ANIMATION_BLUEPRINT)
@@ -127,7 +135,9 @@ def assign_mannequin(cdo, mesh_path, abp_path):
 def make_character_bps():
     mesh_path = find_asset_by_name("SKM_Quinn", "copy Third Person template Content/Characters first") \
         or find_asset_by_name("SKM_Manny")
-    abp_path = find_asset_by_name("ABP_Quinn") or find_asset_by_name("ABP_Manny")
+    # 5.6+ ships ABP_Unarmed (locomotion + jump) inside the Mannequins folder.
+    abp_path = find_asset_by_name("ABP_Unarmed") \
+        or find_asset_by_name("ABP_Quinn") or find_asset_by_name("ABP_Manny")
 
     for name, parent in (
         ("BP_Vowless", "/Script/AshenVow.AV_PlayerCharacter"),

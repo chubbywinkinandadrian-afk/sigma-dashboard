@@ -46,15 +46,23 @@ else:
 PYEOF
 
 # --- 4. Copy the Third Person mannequin content (mesh + anim BP) -------------
-TPL="$UE_ROOT/Engine/Templates/TP_ThirdPerson/Content/Characters"
-if [ -d "$TPL" ] && [ ! -d "$PROJ_DIR/Content/Characters" ]; then
-  mkdir -p "$PROJ_DIR/Content"
-  cp -R "$TPL" "$PROJ_DIR/Content/Characters"
-  echo "Copied mannequin content from the Third Person template."
-elif [ -d "$PROJ_DIR/Content/Characters" ]; then
+# 5.0-5.5 layout: Engine/Templates/TP_ThirdPerson/Content/Characters
+# 5.6+ layout:    Templates/TemplateResources/High/Characters/Content/Mannequins
+#                 (assets reference /Game/Characters/Mannequins/... so nest it)
+TPL_OLD="$UE_ROOT/Engine/Templates/TP_ThirdPerson/Content/Characters"
+TPL_NEW="$UE_ROOT/Templates/TemplateResources/High/Characters/Content/Mannequins"
+if [ -d "$PROJ_DIR/Content/Characters" ]; then
   echo "Mannequin content already present."
+elif [ -d "$TPL_NEW" ]; then
+  mkdir -p "$PROJ_DIR/Content/Characters"
+  cp -R "$TPL_NEW" "$PROJ_DIR/Content/Characters/Mannequins"
+  echo "Copied mannequin content (5.6+ template layout)."
+elif [ -d "$TPL_OLD" ]; then
+  mkdir -p "$PROJ_DIR/Content"
+  cp -R "$TPL_OLD" "$PROJ_DIR/Content/Characters"
+  echo "Copied mannequin content (classic template layout)."
 else
-  echo "WARN: template characters not found at $TPL — BPs will be created without a visible mesh."
+  echo "WARN: template characters not found — BPs will be created without a visible mesh."
 fi
 
 # --- 5. Build the editor target ----------------------------------------------
