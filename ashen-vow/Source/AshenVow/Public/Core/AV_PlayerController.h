@@ -67,7 +67,7 @@ public:
 	AAV_AshenAltar* GetMenuAltar() const { return MenuAltar; }
 
 	/** True if no altar-menu widget class is assigned (altar then rests directly). */
-	bool ShouldAltarRestDirectly() const { return !AltarMenuWidgetClass; }
+	bool ShouldAltarRestDirectly() const;
 
 	// ---- Journal ----
 	UFUNCTION(BlueprintCallable, Category = "AshenVow|Journal")

@@ -355,6 +355,64 @@ def make_map():
     level_subsys.save_current_level()
 
 
+@step("Milestone 2 actors (Elya + pickups) in L_CrownlessGate")
+def populate_milestone2():
+    mesh_path = find_asset_by_name("SKM_Quinn") or find_asset_by_name("SKM_Manny")
+    abp_path = find_asset_by_name("ABP_Unarmed")
+    bp = create_blueprint("BP_Elya", "/Script/AshenVow.AV_ElyaNPC")
+    cdo, _ = bp_cdo("BP_Elya")
+    assign_mannequin(cdo, mesh_path, abp_path)
+    compile_and_save(bp, BP_DIR + "/BP_Elya")
+
+    level_subsys = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
+    actor_subsys = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
+    level_subsys.load_level(MAP_PATH)
+
+    existing = {a.get_actor_label() for a in actor_subsys.get_all_level_actors()}
+    sphere = unreal.load_asset("/Engine/BasicShapes/Sphere")
+
+    # Sun pitch was passed in the wrong Rotator slot originally (roll, pitch, yaw).
+    for actor in actor_subsys.get_all_level_actors():
+        if actor.get_actor_label() == "WhiteSun":
+            actor.set_actor_rotation(unreal.Rotator(0.0, -35.0, 40.0), False)
+
+    if "Elya_Guide" not in existing:
+        elya_cls = unreal.load_object(None, BP_DIR + "/BP_Elya.BP_Elya_C")
+        if elya_cls:
+            elya = spawn(actor_subsys, elya_cls, (1100, -500, 100), unreal.Rotator(0.0, 0.0, 35.0))
+            elya.set_actor_label("Elya_Guide")
+
+    pickup_cls = unreal.load_class(None, "/Script/AshenVow.AV_ItemPickup")
+
+    def spawn_pickup(label, loc, config):
+        if label in existing or not pickup_cls:
+            return
+        pickup = spawn(actor_subsys, pickup_cls, loc)
+        pickup.set_actor_label(label)
+        mesh_comp = pickup.get_editor_property("pickup_mesh")
+        if sphere and mesh_comp:
+            mesh_comp.set_static_mesh(sphere)
+        pickup.set_actor_scale3d(unreal.Vector(0.35, 0.35, 0.35))
+        for key, value in config.items():
+            set_prop(pickup, [key], value)
+
+    spawn_pickup("Pickup_AshCache_SidePath", (650, 950, 40), {
+        "pickup_type": unreal.AV_PickupType.ASH,
+        "ash_amount": 60,
+        "unique_pickup_id": "AshField_AshCache_01",
+        "display_name": "Handful of Ash",
+    })
+    spawn_pickup("Pickup_Lore_KneelingStone", (1550, 650, 40), {
+        "pickup_type": unreal.AV_PickupType.LORE,
+        "unique_pickup_id": "AshField_Lore_01",
+        "display_name": "Cracked Oath-Tablet",
+        "memory_thread_id": "Thread_AshGathers",
+        "memory_thread_text": "Ash gathers where names are forgotten.",
+    })
+
+    level_subsys.save_current_level()
+
+
 def main():
     for d in (ROOT, BP_DIR, MAP_DIR):
         if not eal.does_directory_exist(d):
@@ -367,6 +425,7 @@ def main():
     make_reaction_montages()
     make_hitflash_material()
     make_map()
+    populate_milestone2()
     eal.save_directory(ROOT, only_if_is_dirty=False, recursive=True)
 
     log("================ SETUP SUMMARY ================")

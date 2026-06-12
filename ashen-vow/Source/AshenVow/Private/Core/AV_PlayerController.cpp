@@ -17,6 +17,11 @@ bool AAV_PlayerController::HasDeathScreenWidget() const
 	return DeathScreenClass != nullptr;
 }
 
+bool AAV_PlayerController::ShouldAltarRestDirectly() const
+{
+	return !AltarMenuWidgetClass;
+}
+
 bool AAV_PlayerController::IsDialogueWidgetActive() const
 {
 	return DialogueWidget && DialogueWidget->IsInViewport();
