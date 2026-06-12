@@ -33,14 +33,16 @@ Progress autosaves to `localStorage` (export/import codes in ⚙️ Settings).
 ## Testing
 
 ```bash
-node test/smoke.js
+node test/smoke.js      # data integrity, gacha math, combat, balance sim
+node test/ui-smoke.js   # executes every screen + a live battle via DOM shim
 ```
 
 The smoke test validates data integrity (every enemy/banner/join reference),
 runs 20,000 seeded pulls to verify pity/guarantee math, unit-tests reactions,
 loot, and the RbD revive, and **simulates a full playthrough** with a budget
 party to prove the difficulty curve is clearable without grinding (bosses land
-in the 10–26 round range).
+in the 10–26 round range). The UI smoke test renders every screen and plays an
+auto-battle end-to-end to catch runtime template errors.
 
 ## Project layout
 
