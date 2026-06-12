@@ -51,7 +51,7 @@ greybox piece can be swapped for a real model later without touching code.
 | Mouse | Look |
 | Space | Jump (buffered, with coyote time; costs stamina) |
 | Left Shift | Sprint (drains stamina; hitting 0 = exhaustion lockout until 30% refill) |
-| E | Interact probe (debug: logs what's under the crosshair, ≤3 m) |
+| E | Interact — a prompt appears when looking at something usable (≤3 m), e.g. the red sign on the inn counter |
 | Escape | Release cursor (click to recapture) / close Options in menu |
 
 ## What's where
@@ -60,7 +60,11 @@ greybox piece can be swapped for a real model later without touching code.
 Assets/
   Scripts/
     Player/FPSController.cs     responsive FPS controller + stamina system
-    Player/SAOInteractionProbe.cs  crosshair raycast foundation (E logs target)
+    Player/SAOInteractionProbe.cs  crosshair sensor: finds IInteractables,
+                                dispatches E presses, feeds the prompt UI
+    Interaction/IInteractable.cs   the interact contract (PromptText + Interact)
+    Interaction/DebugSignInteractable.cs  sample sign: logs when read
+    UI/InteractionPromptUI.cs   center-bottom "Press E - …" prompt
     UI/StaminaBar.cs            HUD bar (fades out when full)
     UI/MainMenuController.cs    Start / Load / Options / Quit
     UI/MenuOrbitCamera.cs       slow cinematic orbit for the menu
@@ -85,6 +89,9 @@ materials + skies — safe to tweak, re-running the builder updates them in plac
 
 - The controller exposes `Stamina01`, `IsSprinting`, `IsExhausted` for future
   systems (sword arts will want the same stamina pool).
+- `IInteractable` is the contract every future door / NPC / notice board /
+  loot container implements — the probe (sensing) and prompt UI (display)
+  already handle their side, so a new interactable is just one component.
 - `MainMenuController.SaveExistsKey` is the PlayerPrefs flag a future save
   system should write; Load Game un-greys itself automatically.
 - Scene flow is name-based (`FirstHaven`) — add floors as scenes.
