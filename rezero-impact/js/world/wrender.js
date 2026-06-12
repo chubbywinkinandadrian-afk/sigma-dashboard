@@ -82,7 +82,7 @@
       composer = new THREE.EffectComposer(renderer);
       composer.addPass(new THREE.RenderPass(scene, camera));
       const bloom = new THREE.UnrealBloomPass(
-        new THREE.Vector2(window.innerWidth, window.innerHeight), 0.55, 0.65, 0.82);
+        new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 0.5, 0.85);
       composer.addPass(bloom);
       if (THREE.GammaCorrectionShader) {
         // composer output skips renderer.outputEncoding in r128 — correct manually
