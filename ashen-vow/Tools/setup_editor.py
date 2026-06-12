@@ -232,7 +232,6 @@ def make_reaction_montages():
     hit_light = make_montage("MM_HitReact_Front_Lgt_01", "M_HitReact_Light")
     hit_med = make_montage("MM_HitReact_Front_Med_01", "M_HitReact_Medium")
     death = make_montage("MM_Death_Front_01", "M_Death")
-    dodge = make_montage("MM_Dash", "M_Dodge")
     rest = make_montage("MM_Land", "M_Rest")  # slow-played kneel placeholder for sitting
 
     for bp_name in ("BP_Vowless", "BP_AshboundSoldier"):
@@ -241,7 +240,9 @@ def make_reaction_montages():
         set_cdo_montage(cdo, "stagger_montage", hit_med)
         set_cdo_montage(cdo, "death_montage", death)
         if bp_name == "BP_Vowless":
-            set_cdo_montage(cdo, "dodge_montage", dodge)
+            # No roll anim ships with the template: leave DodgeMontage empty so the
+            # C++ procedural roll (mesh tumble) is used instead of the leap-like dash.
+            set_prop(cdo, ["dodge_montage"], None)
             set_cdo_montage(cdo, "rest_montage", rest)
         compile_and_save(unreal.load_asset(BP_DIR + "/" + bp_name), BP_DIR + "/" + bp_name)
 

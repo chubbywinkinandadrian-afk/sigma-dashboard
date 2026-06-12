@@ -45,7 +45,8 @@ AAV_PlayerCharacter::AAV_PlayerCharacter()
 	Movement->MaxWalkSpeed = RunSpeed;
 	Movement->BrakingDecelerationWalking = 1800.f;
 	Movement->MaxAcceleration = 1700.f; // weighty, not arcade-instant
-	Movement->JumpZVelocity = 600.f;
+	Movement->JumpZVelocity = 470.f;  // short Souls hop, not a moon jump
+	Movement->GravityScale = 1.4f;    // faster fall = weightier arc
 	Movement->AirControl = 0.3f;
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -92,6 +93,8 @@ void AAV_PlayerCharacter::BeginPlay()
 	FlaskCharges = MaxFlaskCharges;
 	OnFlasksChanged.Broadcast(FlaskCharges, MaxFlaskCharges);
 	OnAshChanged.Broadcast(AshCount);
+
+	MeshBaseRelativeRotation = GetMesh()->GetRelativeRotation();
 
 	LockOnComponent->OnTargetLocked.AddDynamic(this, &AAV_PlayerCharacter::HandleTargetLocked);
 	LockOnComponent->OnTargetReleased.AddDynamic(this, &AAV_PlayerCharacter::HandleTargetReleased);
@@ -299,10 +302,9 @@ void AAV_PlayerCharacter::TryDodge()
 		DodgeDirection = -GetActorForwardVector();
 	}
 
-	if (!LockOnComponent->IsLockedOn())
-	{
-		SetActorRotation(FRotator(0.f, DodgeDirection.Rotation().Yaw, 0.f));
-	}
+	// Face the roll direction (also while locked on, like Elden Ring — the
+	// controller-desired rotation re-faces the target once the roll ends).
+	SetActorRotation(FRotator(0.f, DodgeDirection.Rotation().Yaw, 0.f));
 
 	SetActionState(EAV_ActionState::Dodging);
 	DodgePhase = 0;
@@ -397,15 +399,27 @@ void AAV_PlayerCharacter::TickDodge(float DeltaTime)
 		return;
 	}
 
-	// Stagger/death interrupted the dodge — clean up i-frames immediately.
+	// Stagger/death interrupted the dodge — clean up i-frames and the roll spin.
 	if (ActionState != EAV_ActionState::Dodging)
 	{
 		HealthComponent->SetInvulnerable(false);
+		GetMesh()->SetRelativeRotation(MeshBaseRelativeRotation);
 		DodgePhase = -1;
 		return;
 	}
 
 	DodgeTimeElapsed += DeltaTime;
+
+	// Procedural forward roll: tumble the mesh a full turn along the roll
+	// direction (placeholder until a real roll animation replaces it; if a
+	// DodgeMontage is assigned, the montage is used and the spin is skipped).
+	if (!DodgeMontage)
+	{
+		const float SpinDuration = DodgeStartupTime + DodgeActiveTime + DodgeRecoveryTime * 0.6f;
+		const float SpinAlpha = FMath::Clamp(DodgeTimeElapsed / SpinDuration, 0.f, 1.f);
+		const FQuat SpinQuat(FRotator(-360.f * SpinAlpha, 0.f, 0.f)); // nose-down tumble in actor space
+		GetMesh()->SetRelativeRotation(SpinQuat * FQuat(MeshBaseRelativeRotation));
+	}
 
 	if (DodgePhase == 0 && DodgeTimeElapsed >= DodgeStartupTime)
 	{
@@ -429,6 +443,7 @@ void AAV_PlayerCharacter::TickDodge(float DeltaTime)
 
 	if (DodgePhase == 2 && DodgeTimeElapsed >= DodgeStartupTime + DodgeActiveTime + DodgeRecoveryTime)
 	{
+		GetMesh()->SetRelativeRotation(MeshBaseRelativeRotation);
 		DodgePhase = -1;
 		SetActionState(EAV_ActionState::Idle);
 		StartBufferedAttackIfAny();
@@ -563,6 +578,7 @@ void AAV_PlayerCharacter::ResetForRespawn(const FTransform& RespawnTransform)
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	GetMesh()->SetRelativeRotation(MeshBaseRelativeRotation);
 	ResetAnimationState();
 
 	SetActorTransform(RespawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
