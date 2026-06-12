@@ -1,9 +1,12 @@
 #include "World/AV_AshenAltar.h"
 #include "Characters/AV_PlayerCharacter.h"
 #include "Core/AV_GameMode.h"
+#include "Core/AV_PlayerController.h"
+#include "Systems/AV_MemoryThreadSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
+#include "Engine/GameInstance.h"
 
 AAV_AshenAltar::AAV_AshenAltar()
 {
@@ -38,6 +41,26 @@ void AAV_AshenAltar::Interact_Implementation(AActor* Interactor)
 		return;
 	}
 
+	AAV_PlayerController* PC = Cast<AAV_PlayerController>(Player->GetController());
+	if (PC && !PC->ShouldAltarRestDirectly())
+	{
+		PerformRest(Interactor); // sitting at the flame always rests first
+		PC->OpenAltarMenu(this);
+	}
+	else
+	{
+		PerformRest(Interactor);
+	}
+}
+
+void AAV_AshenAltar::PerformRest(AActor* Interactor)
+{
+	AAV_PlayerCharacter* Player = Cast<AAV_PlayerCharacter>(Interactor);
+	if (!Player)
+	{
+		return;
+	}
+
 	if (AAV_GameMode* GameMode = GetWorld()->GetAuthGameMode<AAV_GameMode>())
 	{
 		GameMode->SetActiveAltar(this);
@@ -46,6 +69,15 @@ void AAV_AshenAltar::Interact_Implementation(AActor* Interactor)
 
 	Player->PlayRestSequence(GetActorLocation());
 	Player->RestoreAtAltar();
+
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UAV_MemoryThreadSubsystem* Threads = GameInstance->GetSubsystem<UAV_MemoryThreadSubsystem>())
+		{
+			Threads->AddEntry(FName("MT_AltarTouch"), NSLOCTEXT("AshenVow", "MT_AltarTouch",
+				"The silent altar remembers your touch."));
+		}
+	}
 
 	OnRested.Broadcast(Player);
 	OnRestedBP(Player);

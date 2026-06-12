@@ -5,6 +5,8 @@
 #include "Core/AV_Types.h"
 #include "AV_MeleeCombatComponent.generated.h"
 
+class UAV_VowComponent;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAV_OnAttackPhaseChanged, EAV_AttackPhase, NewPhase);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAV_OnAttackHitLanded, AActor*, HitActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAV_OnAttackFinished);
@@ -66,10 +68,17 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "AshenVow|Combat")
 	FAV_OnAttackFinished OnAttackFinished;
 
+protected:
+	virtual void BeginPlay() override;
+
 private:
 	void EnterPhase(EAV_AttackPhase NewPhase);
 	void AdvancePhase();
 	void PerformHitSweep();
+
+	/** Optional: scales outgoing damage when the owner has a Vow equipped. */
+	UPROPERTY()
+	TObjectPtr<UAV_VowComponent> OwnerVowComponent;
 
 	FAV_AttackData ActiveAttack;
 	EAV_AttackPhase CurrentPhase = EAV_AttackPhase::None;

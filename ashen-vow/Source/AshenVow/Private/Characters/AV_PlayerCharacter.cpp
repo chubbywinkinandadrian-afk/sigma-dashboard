@@ -4,7 +4,9 @@
 #include "Components/AV_MeleeCombatComponent.h"
 #include "Components/AV_LockOnComponent.h"
 #include "Components/AV_InteractionComponent.h"
+#include "Components/AV_VowComponent.h"
 #include "Core/AV_GameMode.h"
+#include "Core/AV_PlayerController.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -63,6 +65,7 @@ AAV_PlayerCharacter::AAV_PlayerCharacter()
 
 	LockOnComponent = CreateDefaultSubobject<UAV_LockOnComponent>(TEXT("LockOnComponent"));
 	InteractionComponent = CreateDefaultSubobject<UAV_InteractionComponent>(TEXT("InteractionComponent"));
+	VowComponent = CreateDefaultSubobject<UAV_VowComponent>(TEXT("VowComponent"));
 
 	MeleeCombatComponent->TargetTag = FName("Enemy");
 
@@ -100,6 +103,8 @@ void AAV_PlayerCharacter::BeginPlay()
 	LockOnComponent->OnTargetLocked.AddDynamic(this, &AAV_PlayerCharacter::HandleTargetLocked);
 	LockOnComponent->OnTargetReleased.AddDynamic(this, &AAV_PlayerCharacter::HandleTargetReleased);
 	MeleeCombatComponent->OnAttackFinished.AddDynamic(this, &AAV_PlayerCharacter::HandleAttackFinished);
+	MeleeCombatComponent->OnAttackHitLanded.AddDynamic(this, &AAV_PlayerCharacter::HandleAttackHitLanded);
+	VowComponent->OnVowAbilityActivated.AddDynamic(this, &AAV_PlayerCharacter::HandleVowAbilityActivated);
 }
 
 void AAV_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -133,6 +138,8 @@ void AAV_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	Input->BindAction(InteractAction, ETriggerEvent::Started, this, &AAV_PlayerCharacter::Input_Interact);
 	Input->BindAction(UseFlaskAction, ETriggerEvent::Started, this, &AAV_PlayerCharacter::Input_UseFlask);
 	Input->BindAction(LockOnAction, ETriggerEvent::Started, this, &AAV_PlayerCharacter::Input_ToggleLockOn);
+	Input->BindAction(VowAbilityAction, ETriggerEvent::Started, this, &AAV_PlayerCharacter::Input_VowAbility);
+	Input->BindAction(JournalAction, ETriggerEvent::Started, this, &AAV_PlayerCharacter::Input_ToggleJournal);
 
 	if (JumpAction)
 	{
@@ -159,6 +166,8 @@ void AAV_PlayerCharacter::CreateDefaultInputAssetsIfNeeded()
 	if (!InteractAction)    { InteractAction    = MakeRuntimeAction(this, EInputActionValueType::Boolean); }
 	if (!UseFlaskAction)    { UseFlaskAction    = MakeRuntimeAction(this, EInputActionValueType::Boolean); }
 	if (!LockOnAction)      { LockOnAction      = MakeRuntimeAction(this, EInputActionValueType::Boolean); }
+	if (!VowAbilityAction)  { VowAbilityAction  = MakeRuntimeAction(this, EInputActionValueType::Boolean); }
+	if (!JournalAction)     { JournalAction     = MakeRuntimeAction(this, EInputActionValueType::Boolean); }
 
 	// WASD -> 2D axis. W/S land on Y via swizzle, A is negated X.
 	{
@@ -199,6 +208,8 @@ void AAV_PlayerCharacter::CreateDefaultInputAssetsIfNeeded()
 	DefaultMappingContext->MapKey(InteractAction, EKeys::F);
 	DefaultMappingContext->MapKey(UseFlaskAction, EKeys::R);
 	DefaultMappingContext->MapKey(LockOnAction, EKeys::Q);
+	DefaultMappingContext->MapKey(VowAbilityAction, EKeys::E);
+	DefaultMappingContext->MapKey(JournalAction, EKeys::Tab);
 }
 
 void AAV_PlayerCharacter::Tick(float DeltaTime)
@@ -215,7 +226,7 @@ void AAV_PlayerCharacter::Input_Move(const FInputActionValue& Value)
 	const FVector2D MoveValue = Value.Get<FVector2D>();
 	LastMoveInput = MoveValue;
 
-	if (!Controller || !IsAlive())
+	if (!Controller || !IsAlive() || IsGameplayBlockedByUI())
 	{
 		return;
 	}
@@ -268,7 +279,7 @@ void AAV_PlayerCharacter::Input_SprintStop(const FInputActionValue& Value)
 
 void AAV_PlayerCharacter::Input_Jump(const FInputActionValue& Value)
 {
-	if (ActionState == EAV_ActionState::Idle && IsAlive() && !bResting)
+	if (ActionState == EAV_ActionState::Idle && IsAlive() && !bResting && !IsGameplayBlockedByUI())
 	{
 		Jump();
 	}
@@ -281,11 +292,12 @@ void AAV_PlayerCharacter::Input_Dodge(const FInputActionValue& Value)
 
 void AAV_PlayerCharacter::TryDodge()
 {
-	if (ActionState != EAV_ActionState::Idle || !IsAlive())
+	if (ActionState != EAV_ActionState::Idle || !IsAlive() || IsGameplayBlockedByUI())
 	{
 		return;
 	}
-	if (!StaminaComponent->Consume(DodgeStaminaCost))
+	// Vow of Silence makes dodging cheaper.
+	if (!StaminaComponent->Consume(DodgeStaminaCost * VowComponent->GetDodgeStaminaCostMultiplier()))
 	{
 		return;
 	}
@@ -316,6 +328,10 @@ void AAV_PlayerCharacter::TryDodge()
 
 void AAV_PlayerCharacter::Input_LightAttack(const FInputActionValue& Value)
 {
+	if (IsGameplayBlockedByUI())
+	{
+		return;
+	}
 	if (!TryStartAttack(false))
 	{
 		bBufferedLight = true;
@@ -324,6 +340,10 @@ void AAV_PlayerCharacter::Input_LightAttack(const FInputActionValue& Value)
 
 void AAV_PlayerCharacter::Input_HeavyAttack(const FInputActionValue& Value)
 {
+	if (IsGameplayBlockedByUI())
+	{
+		return;
+	}
 	if (!TryStartAttack(true))
 	{
 		bBufferedHeavy = true;
@@ -334,10 +354,14 @@ void AAV_PlayerCharacter::Input_Interact(const FInputActionValue& Value)
 {
 	if (bResting)
 	{
-		ExitRest(); // F while seated = rise
+		// F while seated = rise, but only once the altar menu has been left.
+		if (!IsGameplayBlockedByUI())
+		{
+			ExitRest();
+		}
 		return;
 	}
-	if (ActionState == EAV_ActionState::Idle && IsAlive())
+	if (ActionState == EAV_ActionState::Idle && IsAlive() && !IsGameplayBlockedByUI())
 	{
 		InteractionComponent->TryInteract();
 	}
@@ -345,7 +369,7 @@ void AAV_PlayerCharacter::Input_Interact(const FInputActionValue& Value)
 
 void AAV_PlayerCharacter::Input_UseFlask(const FInputActionValue& Value)
 {
-	if (ActionState != EAV_ActionState::Idle || !IsAlive() || FlaskCharges <= 0)
+	if (ActionState != EAV_ActionState::Idle || !IsAlive() || FlaskCharges <= 0 || IsGameplayBlockedByUI())
 	{
 		return;
 	}
@@ -367,10 +391,43 @@ void AAV_PlayerCharacter::Input_UseFlask(const FInputActionValue& Value)
 
 void AAV_PlayerCharacter::Input_ToggleLockOn(const FInputActionValue& Value)
 {
-	if (IsAlive() && !bResting)
+	if (IsAlive() && !bResting && !IsGameplayBlockedByUI())
 	{
 		LockOnComponent->ToggleLockOn();
 	}
+}
+
+void AAV_PlayerCharacter::Input_VowAbility(const FInputActionValue& Value)
+{
+	if (ActionState == EAV_ActionState::Idle && IsAlive() && !IsGameplayBlockedByUI())
+	{
+		VowComponent->TryActivateAbility();
+	}
+}
+
+void AAV_PlayerCharacter::Input_ToggleJournal(const FInputActionValue& Value)
+{
+	// Always forwarded — the controller decides (Tab closes an open journal).
+	if (AAV_PlayerController* PC = Cast<AAV_PlayerController>(GetController()))
+	{
+		PC->ToggleJournal();
+	}
+}
+
+bool AAV_PlayerCharacter::IsGameplayBlockedByUI() const
+{
+	const AAV_PlayerController* PC = Cast<AAV_PlayerController>(GetController());
+	return PC && PC->IsUIBlockingGameplay();
+}
+
+void AAV_PlayerCharacter::HandleAttackHitLanded(AActor* HitActor)
+{
+	VowComponent->GainEnergyFromHit(); // combat feeds Vow Energy
+}
+
+void AAV_PlayerCharacter::HandleVowAbilityActivated(const FAV_VowDefinition& Vow)
+{
+	OnVowAbilityBP(Vow);
 }
 
 // ---------------- Lock-on movement modes ----------------
@@ -600,6 +657,7 @@ void AAV_PlayerCharacter::RestoreAtAltar()
 {
 	HealthComponent->ResetVitals();
 	StaminaComponent->RestoreFull();
+	VowComponent->RestoreFullEnergy();
 	FlaskCharges = MaxFlaskCharges;
 	OnFlasksChanged.Broadcast(FlaskCharges, MaxFlaskCharges);
 }
@@ -663,4 +721,11 @@ void AAV_PlayerCharacter::AddAsh(int32 Amount)
 {
 	AshCount = FMath::Max(0, AshCount + Amount);
 	OnAshChanged.Broadcast(AshCount);
+}
+
+void AAV_PlayerCharacter::IncreaseMaxFlaskCharges(int32 Amount)
+{
+	MaxFlaskCharges += FMath::Max(0, Amount);
+	FlaskCharges = FMath::Min(FlaskCharges + Amount, MaxFlaskCharges);
+	OnFlasksChanged.Broadcast(FlaskCharges, MaxFlaskCharges);
 }

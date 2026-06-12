@@ -4,6 +4,7 @@
 #include "Components/AV_StaminaComponent.h"
 #include "Components/AV_LockOnComponent.h"
 #include "Components/AV_InteractionComponent.h"
+#include "Components/AV_VowComponent.h"
 #include "Interfaces/AV_Targetable.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -67,4 +68,22 @@ bool UAV_HUDWidget::GetLockOnScreenPosition(FVector2D& OutScreenPosition) const
 
 	const FVector WorldPoint = IAV_Targetable::Execute_GetTargetPoint(Target);
 	return UGameplayStatics::ProjectWorldToScreen(GetOwningPlayer(), WorldPoint, OutScreenPosition);
+}
+
+float UAV_HUDWidget::GetVowEnergyPercent() const
+{
+	const AAV_PlayerCharacter* Player = GetPlayer();
+	return Player ? Player->GetVowComponent()->GetEnergyPercent() : 0.f;
+}
+
+FText UAV_HUDWidget::GetEquippedVowName() const
+{
+	const AAV_PlayerCharacter* Player = GetPlayer();
+	return Player ? Player->GetVowComponent()->GetEquippedVowDisplayName() : FText::GetEmpty();
+}
+
+float UAV_HUDWidget::GetVowAbilityCooldownRemaining() const
+{
+	const AAV_PlayerCharacter* Player = GetPlayer();
+	return Player ? Player->GetVowComponent()->GetAbilityCooldownRemaining() : 0.f;
 }

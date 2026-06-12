@@ -1,5 +1,6 @@
 #include "Components/AV_MeleeCombatComponent.h"
 #include "Components/AV_HealthComponent.h"
+#include "Components/AV_VowComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/AnimInstance.h"
@@ -10,6 +11,12 @@
 UAV_MeleeCombatComponent::UAV_MeleeCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+}
+
+void UAV_MeleeCombatComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	OwnerVowComponent = GetOwner()->FindComponentByClass<UAV_VowComponent>();
 }
 
 bool UAV_MeleeCombatComponent::BeginAttack(const FAV_AttackData& AttackData)
@@ -183,7 +190,8 @@ void UAV_MeleeCombatComponent::PerformHitSweep()
 		HitActorsThisSwing.Add(HitActor);
 
 		FAV_DamageInfo DamageInfo;
-		DamageInfo.Amount = ActiveAttack.Damage;
+		DamageInfo.Amount = ActiveAttack.Damage *
+			(OwnerVowComponent ? OwnerVowComponent->GetOutgoingDamageMultiplier() : 1.f);
 		DamageInfo.PoiseDamage = ActiveAttack.PoiseDamage;
 		DamageInfo.InstigatorActor = Owner;
 		DamageInfo.HitLocation = HitActor->GetActorLocation();

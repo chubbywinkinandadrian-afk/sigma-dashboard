@@ -61,9 +61,17 @@ public:
 	UFUNCTION(BlueprintPure, Category = "AshenVow|Health")
 	float GetHealthNormalizedLow() const { return GetHealthPercent(); }
 
-	/** Vow hook: 1.0 = normal healing. Vow of Ash will set 0.75 in Milestone 2. */
+	/** Vow hook: 1.0 = normal healing (Vow of Ash sets 0.75). */
 	UFUNCTION(BlueprintCallable, Category = "AshenVow|Health")
 	void SetHealingMultiplier(float NewMultiplier) { HealingMultiplier = FMath::Max(0.f, NewMultiplier); }
+
+	/** Vow hook: scales incoming damage (Vow of Iron sets 0.8 = 20% defense). */
+	UFUNCTION(BlueprintCallable, Category = "AshenVow|Health")
+	void SetIncomingDamageMultiplier(float NewMultiplier) { IncomingDamageMultiplier = FMath::Max(0.f, NewMultiplier); }
+
+	/** Vow hook: adds to max poise on top of the base value (Vow of Iron). */
+	UFUNCTION(BlueprintCallable, Category = "AshenVow|Health")
+	void SetMaxPoiseBonus(float Bonus);
 
 	UPROPERTY(BlueprintAssignable, Category = "AshenVow|Health")
 	FAV_OnHealthChanged OnHealthChanged;
@@ -103,9 +111,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Health", meta = (ClampMin = "0.0"))
 	float HealingMultiplier = 1.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Health", meta = (ClampMin = "0.0"))
+	float IncomingDamageMultiplier = 1.f;
+
 private:
 	void HandlePoiseDamage(float PoiseDamage);
 	void ResetPoise();
+
+	/** MaxPoise as authored, before any Vow bonus. Captured lazily on first use. */
+	float BaseMaxPoise = -1.f;
 
 	FTimerHandle PoiseResetTimer;
 };

@@ -21,7 +21,8 @@ float UAV_HealthComponent::ApplyDamage(const FAV_DamageInfo& DamageInfo)
 		return 0.f;
 	}
 
-	const float ActualDamage = FMath::Min(DamageInfo.Amount, CurrentHealth);
+	const float ScaledAmount = DamageInfo.Amount * IncomingDamageMultiplier;
+	const float ActualDamage = FMath::Min(ScaledAmount, CurrentHealth);
 	CurrentHealth -= ActualDamage;
 
 	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
@@ -62,8 +63,19 @@ void UAV_HealthComponent::InitVitals(float InMaxHealth, float InMaxPoise)
 {
 	MaxHealth = FMath::Max(1.f, InMaxHealth);
 	MaxPoise = InMaxPoise;
+	BaseMaxPoise = InMaxPoise;
 	CurrentHealth = MaxHealth;
 	CurrentPoise = MaxPoise;
+}
+
+void UAV_HealthComponent::SetMaxPoiseBonus(float Bonus)
+{
+	if (BaseMaxPoise < 0.f)
+	{
+		BaseMaxPoise = MaxPoise;
+	}
+	MaxPoise = BaseMaxPoise + FMath::Max(0.f, Bonus);
+	CurrentPoise = FMath::Min(CurrentPoise + FMath::Max(0.f, Bonus), MaxPoise);
 }
 
 void UAV_HealthComponent::ResetVitals()

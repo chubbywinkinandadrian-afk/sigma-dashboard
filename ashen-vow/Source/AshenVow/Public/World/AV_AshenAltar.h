@@ -28,10 +28,15 @@ class ASHENVOW_API AAV_AshenAltar : public AActor, public IAV_Interactable
 public:
 	AAV_AshenAltar();
 
-	// IAV_Interactable
+	// IAV_Interactable — opens the altar menu (Rest / Change Vow / Leave) when a
+	// menu widget is assigned on the controller; otherwise rests immediately.
 	virtual bool CanInteract_Implementation(AActor* Interactor) override;
 	virtual FText GetInteractionText_Implementation() override;
 	virtual void Interact_Implementation(AActor* Interactor) override;
+
+	/** The actual rest: restore player, set respawn here, respawn normal enemies. */
+	UFUNCTION(BlueprintCallable, Category = "AshenVow|Altar")
+	void PerformRest(AActor* Interactor);
 
 	/** Where the player stands after respawning at this altar. */
 	UFUNCTION(BlueprintPure, Category = "AshenVow|Altar")

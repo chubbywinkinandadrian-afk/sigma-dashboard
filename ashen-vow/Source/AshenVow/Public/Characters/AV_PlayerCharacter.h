@@ -2,12 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "Characters/AV_CharacterBase.h"
+#include "Vow/AV_VowTypes.h"
 #include "AV_PlayerCharacter.generated.h"
 
 class USpringArmComponent;
 class UCameraComponent;
 class UAV_LockOnComponent;
 class UAV_InteractionComponent;
+class UAV_VowComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
@@ -58,6 +60,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AshenVow|Player")
 	void AddAsh(int32 Amount);
 
+	/** Flask Upgrade pickups: raises the cap and grants the new charge. */
+	UFUNCTION(BlueprintCallable, Category = "AshenVow|Player")
+	void IncreaseMaxFlaskCharges(int32 Amount);
+
 	UFUNCTION(BlueprintPure, Category = "AshenVow|Player")
 	int32 GetAshCount() const { return AshCount; }
 
@@ -72,6 +78,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "AshenVow|Player")
 	UAV_InteractionComponent* GetInteractionComponent() const { return InteractionComponent; }
+
+	UFUNCTION(BlueprintPure, Category = "AshenVow|Player")
+	UAV_VowComponent* GetVowComponent() const { return VowComponent; }
 
 	UPROPERTY(BlueprintAssignable, Category = "AshenVow|Player")
 	FAV_OnFlasksChanged OnFlasksChanged;
@@ -89,6 +98,10 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "AshenVow|Player", meta = (DisplayName = "On Attack Started (BP)"))
 	void OnAttackStartedBP(const FAV_AttackData& Attack);
 
+	/** VFX/SFX hook for the Vow ability burst (Ash Burst ring, etc.). */
+	UFUNCTION(BlueprintImplementableEvent, Category = "AshenVow|Player", meta = (DisplayName = "On Vow Ability (BP)"))
+	void OnVowAbilityBP(const FAV_VowDefinition& Vow);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void HandleDeath(AActor* Victim, AActor* Killer) override;
@@ -105,6 +118,17 @@ protected:
 	void Input_Interact(const FInputActionValue& Value);
 	void Input_UseFlask(const FInputActionValue& Value);
 	void Input_ToggleLockOn(const FInputActionValue& Value);
+	void Input_VowAbility(const FInputActionValue& Value);
+	void Input_ToggleJournal(const FInputActionValue& Value);
+
+	/** True while dialogue/journal/altar menu is open — gameplay input is ignored. */
+	bool IsGameplayBlockedByUI() const;
+
+	UFUNCTION()
+	void HandleAttackHitLanded(AActor* HitActor);
+
+	UFUNCTION()
+	void HandleVowAbilityActivated(const FAV_VowDefinition& Vow);
 
 	UFUNCTION()
 	void HandleTargetLocked(AActor* NewTarget);
@@ -128,6 +152,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AshenVow|Components")
 	TObjectPtr<UAV_InteractionComponent> InteractionComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AshenVow|Components")
+	TObjectPtr<UAV_VowComponent> VowComponent;
 
 	// ---- Input assets (assign in BP child, or leave null for runtime defaults) ----
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Input")
@@ -162,6 +189,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Input")
 	TObjectPtr<UInputAction> LockOnAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Input")
+	TObjectPtr<UInputAction> VowAbilityAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Input")
+	TObjectPtr<UInputAction> JournalAction;
 
 	// ---- Movement tuning ----
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Movement", meta = (ClampMin = "50.0"))

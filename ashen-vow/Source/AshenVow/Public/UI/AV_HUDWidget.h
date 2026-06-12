@@ -44,6 +44,21 @@ public:
 	UFUNCTION(BlueprintPure, Category = "AshenVow|HUD")
 	bool GetLockOnScreenPosition(FVector2D& OutScreenPosition) const;
 
+	UFUNCTION(BlueprintPure, Category = "AshenVow|HUD")
+	float GetVowEnergyPercent() const;
+
+	/** Equipped Vow's display name; "Vowless" when none. */
+	UFUNCTION(BlueprintPure, Category = "AshenVow|HUD")
+	FText GetEquippedVowName() const;
+
+	UFUNCTION(BlueprintPure, Category = "AshenVow|HUD")
+	float GetVowAbilityCooldownRemaining() const;
+
+	/** Toast for pickups, Memory Threads, and Vow changes. Implement in the WBP
+	 *  (fade a single text block in/out — keep it minimal and quiet). */
+	UFUNCTION(BlueprintImplementableEvent, Category = "AshenVow|HUD")
+	void ShowNotification(const FText& Message);
+
 protected:
 	AAV_PlayerCharacter* GetPlayer() const;
 };
