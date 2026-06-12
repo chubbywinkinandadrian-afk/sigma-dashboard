@@ -40,23 +40,18 @@ namespace SAO.EditorTools
             {
                 EditorUtility.DisplayDialog("SAO Builder",
                     "Required shaders not found.\n" +
-                    "Built-in RP needs 'SAO/Toon'; URP uses 'SAO/ToonURP'.\n" +
+                    "Built-in RP needs 'SAO/Toon'; URP needs 'SAO/ToonURP' or the\n" +
+                    "'Universal Render Pipeline/Lit' fallback.\n" +
                     "'SAO/SkyGradient' is required in both.\n" +
                     "Check that Assets/Shaders imported without compile errors.", "OK");
                 return;
             }
             // Under URP, warn once if we're on the flat-color Lit fallback.
+            // (ShadersOk above guarantees the picker returned a shader.)
             if (GraphicsSettings.currentRenderPipeline != null)
             {
                 var toon = PickToonShader();
-                if (toon == null)
-                {
-                    EditorUtility.DisplayDialog("SAO Builder",
-                        "No usable toon shader and no 'Universal Render Pipeline/Lit' " +
-                        "fallback found — is URP installed correctly?", "OK");
-                    return;
-                }
-                if (toon.name != "SAO/ToonURP")
+                if (toon != null && toon.name != "SAO/ToonURP")
                     Debug.LogWarning("[SAO] 'SAO/ToonURP' is missing or has compile errors — " +
                                      "generated materials fall back to flat-color URP Lit " +
                                      "(correct colors, but no bands/outlines until the shader is fixed).");
@@ -821,14 +816,15 @@ namespace SAO.EditorTools
             return m;
         }
 
-        /// <summary>True when every shader the active pipeline needs exists.
-        /// Under URP the toon shader is optional (URP Lit fallback).</summary>
+        /// <summary>True when every shader the active pipeline needs exists:
+        /// the sky shader plus whatever PickToonShader resolves to — SAO/Toon
+        /// on Built-in, SAO/ToonURP or the URP Lit fallback on URP. A null
+        /// from the picker (e.g. broken URP install) fails the check, so the
+        /// builders abort cleanly instead of spawning material errors.</summary>
         private static bool ShadersOk()
         {
             if (Shader.Find("SAO/SkyGradient") == null) return false;
-            if (GraphicsSettings.currentRenderPipeline == null && Shader.Find("SAO/Toon") == null)
-                return false;
-            return true;
+            return PickToonShader() != null;
         }
 
         /// <summary>

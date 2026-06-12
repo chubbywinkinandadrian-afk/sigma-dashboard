@@ -1,6 +1,7 @@
 // =============================================================================
-//  SAO/ToonURP — the SAO/Toon cel shader ported to URP (Unity 6 / URP 17+,
-//  also works on URP 12+). Same properties, same banding math, same look:
+//  SAO/ToonURP — the SAO/Toon cel shader ported to URP (Unity 6.1+; older
+//  URP versions still work on the plain Forward path). Same properties,
+//  same banding math, same look:
 //
 //  Pass 1: inverted-hull outline (SRPDefaultUnlit — URP draws untagged/unlit
 //          passes alongside UniversalForward)
@@ -15,8 +16,8 @@
 //    Lighting Source = Color the flat color arrives through SH, so
 //    SampleSH(normal) returns the same single fill tone.
 //  * Additional lights use the official LIGHT_LOOP macros so the shader works
-//    on Forward, Forward+ and clustered paths (Unity 6 renamed the keyword,
-//    both are declared below).
+//    on both the plain Forward path and the clustered Forward+/Deferred+
+//    paths (_CLUSTER_LIGHT_LOOP, the Unity 6.1+ keyword).
 // =============================================================================
 Shader "SAO/ToonURP"
 {
@@ -172,10 +173,10 @@ Shader "SAO/ToonURP"
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
-            // Forward+/clustered keyword: pre-6.1 name and the renamed one —
-            // declaring an unused keyword is harmless, missing one kills the
-            // lantern loop on that path.
-            #pragma multi_compile _ _FORWARD_PLUS _CLUSTER_LIGHT_LOOP
+            // Unity 6.1+ clustered light loop (Forward+/Deferred+). Without
+            // this keyword the LIGHT_LOOP below would miss clustered lights
+            // and the lanterns/fireplace would go dark on those paths.
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
             #pragma multi_compile_fog
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -243,7 +244,8 @@ Shader "SAO/ToonURP"
 
                 // ---- additional lights (lanterns, fireplace): banded pools --
             #if defined(_ADDITIONAL_LIGHTS) || defined(_ADDITIONAL_LIGHTS_VERTEX)
-                // InputData fields the LIGHT_LOOP macros read on Forward+.
+                // InputData fields the LIGHT_LOOP macros read on the
+                // clustered paths.
                 InputData inputData = (InputData)0;
                 inputData.positionWS = input.positionWS;
                 inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(input.positionCS);
