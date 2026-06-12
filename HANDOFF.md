@@ -107,7 +107,9 @@ copied into the project (see `sao-aincrad-unity/README.md` Quickstart).
 - Editor builder references runtime types (`FPSController`,
   `SAOInteractionProbe`, `MenuOrbitCamera`); fine in the default assembly, but
   `.asmdef` adoption later needs an Editor→runtime assembly reference.
-- `SAOInteractionProbe` uses no `UnityEditor` API; player builds compile.
+- `SAOInteractionProbe` has no obvious player-build editor-API risk from
+  static inspection (only `using UnityEngine`). Unity compilation was not run
+  in this source-package repo.
 - `Physics.DefaultRaycastLayers` as `LayerMask` initializer: valid const-int
   implicit conversion (a bare LayerMask defaults to *Nothing*).
 - Legacy `Input.GetKeyDown` requires Active Input Handling = Input Manager (or Both).
