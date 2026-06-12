@@ -131,6 +131,72 @@ body { font-family: Georgia, 'Times New Roman', serif; color: var(--text); }
 .rbd-core p { color: #b8a8d0; font-style: italic; font-size: 14px; line-height: 1.6; margin-bottom: 10px; }
 .rbd-core b { color: var(--gold-bright); }
 
+/* hud buttons (summon / menu) */
+#hud-buttons {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px;
+}
+.hud-btn {
+  pointer-events: auto; cursor: pointer; font-family: inherit; text-decoration: none;
+  background: var(--panel); border: 1px solid var(--gold); color: var(--text);
+  border-radius: 18px; padding: 7px 16px; font-size: 13px;
+}
+.hud-btn:hover { box-shadow: 0 0 12px #ffd97a50; }
+
+/* stamina */
+#stamina-wrap {
+  position: absolute; bottom: 96px; left: 50%; transform: translateX(-50%);
+  width: 240px; height: 7px; background: #10141fb0; border: 1px solid #3a4561;
+  border-radius: 5px; overflow: hidden; transition: opacity .4s;
+}
+#stamina-fill { height: 100%; width: 100%; background: #aee07e; transition: width .1s; }
+
+/* interact prompt + npc barks */
+#interact-prompt {
+  position: absolute; bottom: 150px; left: 50%; transform: translateX(-50%);
+  background: var(--panel); border: 1px solid var(--gold); border-radius: 10px;
+  padding: 7px 16px; font-size: 14px;
+}
+#interact-prompt b { color: var(--gold-bright); }
+#npc-bark {
+  position: absolute; bottom: 190px; left: 50%; transform: translateX(-50%);
+  max-width: 480px; text-align: center;
+  background: #f4efe2; color: #3a3226; border-radius: 14px;
+  padding: 9px 18px; font-size: 13.5px; font-style: italic;
+  box-shadow: 0 4px 18px #0008;
+}
+
+/* summon overlay */
+#summon-wrap {
+  position: absolute; inset: 0; background: #070a12d8;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: auto !important;
+}
+.summon-dialog { max-width: 600px; }
+.sm-crystals { float: right; font-size: 15px; color: var(--text); }
+.banner-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.banner-chip {
+  font-family: inherit; cursor: pointer; font-size: 11.5px; padding: 6px 11px;
+  background: #27334d; color: var(--dim); border: 1px solid #3a4561; border-radius: 16px;
+}
+.banner-chip.active { color: #2a2008; background: linear-gradient(180deg, #f3cf7c, #cfa14a); border-color: var(--gold-bright); }
+.sm-results {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 10px 0;
+  max-height: 240px; overflow-y: auto;
+}
+.sm-card {
+  display: flex; align-items: center; gap: 8px;
+  background: #10141f90; border: 1px solid #3a4561; border-radius: 9px; padding: 6px 10px;
+}
+.sm-card.r5 { border-color: #e6a23c; box-shadow: 0 0 10px #e6a23c50; }
+.sm-card.r4 { border-color: #a06bd4; }
+.sm-icon { font-size: 19px; }
+.sm-name { font-size: 12px; flex: 1; }
+.sm-stars { color: var(--gold-bright); font-size: 10px; }
+.sm-new { background: var(--gold-bright); color: #2a2008; font-size: 9px; font-weight: bold; padding: 1px 6px; border-radius: 7px; }
+.sm-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.w-btn small { color: inherit; opacity: .75; font-size: 11px; }
+
 /* screen shake */
 .shake { animation: shake .35s; }
 @keyframes shake {

@@ -25,25 +25,40 @@ Priestella built on decks over the water. Each story stage is a real place — a
 golden beacon marks the next objective, mob camps roam the roads, and boss
 arenas wait at landmarks (the White Whale circles the great flower tree).
 
-- **Real-time action combat**: light attacks (ranged characters fire bolts),
-  dodge rolls with i-frames, skills/bursts adapted from each character's kit,
-  elemental auras and reactions, telegraphed enemy attacks and boss ground slams.
-  Regulus still only drops his guard when he pauses for breath.
+- **Weapon-based action combat**: every weapon class (sword, knife, flail, claw,
+  fist, fan, caster) has its own light combo chain with distinct swings, plus
+  charged heavies, sprint attacks and plunge attacks. Dodge i-frames, stamina,
+  skills/bursts from each character's kit, elemental auras and reactions.
+- **Enemy movesets**: telegraphed melee and multi-hit combos, charging dashes,
+  ground-zone barrages, bolt volleys and boss slam AoEs. Regulus still only
+  drops his guard when he pauses for breath.
+- **Movement**: jump, Genshin-style climbing on steep rock (stamina-gated),
+  sprint, and solid collision against trees, houses, stalls and the fountain.
 - **Genshin-style party**: switch between your 4 deployed characters with 1–4;
   if the whole party falls, **Return by Death** wakes you at the last waypoint
   with stacking Determination.
-- **Travel**: discover waypoint crystals in each region for fast travel; day/night
-  cycle; circular minimap.
+- **The capital plaza**: cobblestone, a tiered fountain, timber-frame houses
+  with arched windows, market stalls, lamp posts, a decorated festival tree,
+  falling snow, and a wandering crowd of NPCs with ambient chatter (original
+  lines, written to fit the setting).
+- **Winter Festival outfits**: the whole cast wears original festive variants
+  (fur trim, festive colors, the occasional santa hat — Emilia gets her holly);
+  toggle Classic/Winter in the pause menu. Cel-shaded rigs with anime faces,
+  outlines and bloom.
+- **Trials**: four repeatable dungeon-style horde arenas with tier selection
+  (marked obelisks; press F). **Summoning works in-world** via the ✦ button.
 
 | Input | Action |
 |---|---|
 | WASD / mouse | move / camera (click canvas for mouse-look) |
-| LMB (or J) | attack |
+| LMB tap / hold (or RMB) | light combo / charged heavy |
 | E / Q | skill / burst (100 energy) |
-| Space / Shift | dodge roll / sprint |
-| Tab | lock-on |
+| Space | jump (auto-climb steep rock while moving into it) |
+| Shift | sprint |
+| Ctrl or K | dodge roll |
+| Tab / F | lock-on / interact (trials) |
 | 1–4 | switch character |
-| Esc | pause, fast travel, back to menu |
+| Esc | pause: fast travel, outfits, summon, menu |
 
 ## What's in the box
 

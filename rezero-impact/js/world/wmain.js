@@ -5,8 +5,8 @@
   let W = null;
   let canvas = null;
   const keys = {};
-  const pressed = {};       // edge-triggered since last sim step
-  let mouseDown = false;
+  const pressed = {};         // edge-triggered since last sim step
+  let mouseDown = false, mouseDownAt = 0, rmbEdge = false;
   let cam = { yaw: Math.PI, pitch: 0.42, dist: 9 };
   let lastT = 0, acc = 0;
   const STEP = 1 / 60;
@@ -18,7 +18,13 @@
     RZ.WHud.init({
       onFastTravel(id) { RZ.World.fastTravel(W, id); snapCamera(); },
       onRespawn() { RZ.World.respawnAfterDeath(W); snapCamera(); },
-      relock() { /* user clicks canvas to re-engage mouse look */ },
+      onTrialStart(id, tier) {
+        if (RZ.World.startTrial(W, id, tier)) {
+          RZ.WRender.handleEvents(W, W.events);
+          RZ.WHud.handleEvents(W, W.events);
+        }
+      },
+      onOutfit(mode) { RZ.WRender.setOutfits(mode); },
     });
     W = RZ.World.create({});
     snapCamera();
@@ -46,9 +52,12 @@
       if (RZ.WHud.blocking()) return;
       if (e.button === 0) {
         mouseDown = true;
+        mouseDownAt = performance.now();
         if (document.pointerLockElement !== canvas && canvas.requestPointerLock) canvas.requestPointerLock();
       }
+      if (e.button === 2) rmbEdge = true;
     });
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     window.addEventListener('mouseup', (e) => { if (e.button === 0) mouseDown = false; });
     window.addEventListener('mousemove', (e) => {
       if (document.pointerLockElement === canvas && !RZ.WHud.blocking()) {
@@ -64,7 +73,6 @@
   }
 
   function gatherInput() {
-    // camera-relative WASD
     let fx = 0, fz = 0;
     if (keys.KeyW) fz += 1;
     if (keys.KeyS) fz -= 1;
@@ -81,17 +89,21 @@
     }
     let switchTo = -1;
     for (let i = 0; i < 4; i++) if (pressed['Digit' + (i + 1)]) switchTo = i;
+    const held = mouseDown ? (performance.now() - mouseDownAt) / 1000 : 0;
     const input = {
       mx, mz,
       sprint: !!keys.ShiftLeft || !!keys.ShiftRight,
-      dodge: !!pressed.Space,
-      attack: mouseDown || !!pressed.KeyJ || !!keys.KeyJ,
+      jump: !!pressed.Space,
+      dodge: !!pressed.ControlLeft || !!pressed.ControlRight || !!pressed.KeyK,
+      attack: (mouseDown && held <= 0.45) || !!pressed.KeyJ,
+      heavy: (mouseDown && held > 0.45) || rmbEdge,
       skill: !!pressed.KeyE,
       burst: !!pressed.KeyQ,
       interact: !!pressed.KeyF,
       lockToggle: !!pressed.Tab,
       switchTo,
     };
+    rmbEdge = false;
     for (const k of Object.keys(pressed)) pressed[k] = false;
     W._moving = Math.hypot(mx, mz) > 0.01;
     return input;
@@ -115,8 +127,6 @@
         }
       }
       if (guard >= 5) acc = 0;
-    } else if (W.pendingRbd && !RZ.WHud.blocking()) {
-      // rbd overlay was dismissed without respawn (shouldn't happen) — keep frozen
     }
 
     // soft lock-on camera bias
