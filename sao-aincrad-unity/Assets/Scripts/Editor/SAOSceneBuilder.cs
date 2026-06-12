@@ -36,12 +36,30 @@ namespace SAO.EditorTools
         [MenuItem("Tools/SAO/1. Create Toon Materials", false, 1)]
         public static void CreateMaterials()
         {
-            if (Shader.Find("SAO/Toon") == null || Shader.Find("SAO/SkyGradient") == null)
+            if (!ShadersOk())
             {
                 EditorUtility.DisplayDialog("SAO Builder",
-                    "Shaders 'SAO/Toon' and/or 'SAO/SkyGradient' not found.\n" +
+                    "Required shaders not found.\n" +
+                    "Built-in RP needs 'SAO/Toon'; URP uses 'SAO/ToonURP'.\n" +
+                    "'SAO/SkyGradient' is required in both.\n" +
                     "Check that Assets/Shaders imported without compile errors.", "OK");
                 return;
+            }
+            // Under URP, warn once if we're on the flat-color Lit fallback.
+            if (GraphicsSettings.currentRenderPipeline != null)
+            {
+                var toon = PickToonShader();
+                if (toon == null)
+                {
+                    EditorUtility.DisplayDialog("SAO Builder",
+                        "No usable toon shader and no 'Universal Render Pipeline/Lit' " +
+                        "fallback found — is URP installed correctly?", "OK");
+                    return;
+                }
+                if (toon.name != "SAO/ToonURP")
+                    Debug.LogWarning("[SAO] 'SAO/ToonURP' is missing or has compile errors — " +
+                                     "generated materials fall back to flat-color URP Lit " +
+                                     "(correct colors, but no bands/outlines until the shader is fixed).");
             }
 
             EnsureFolder("Assets", "SAO_Generated");
@@ -96,7 +114,7 @@ namespace SAO.EditorTools
         public static void BuildInn()
         {
             CreateMaterials();   // idempotent; dialogs + aborts if the shaders are missing
-            if (Shader.Find("SAO/Toon") == null) return;
+            if (!ShadersOk()) return;
 
             // ---- idempotency: tear down previous builds before rebuilding ----
             // The inn root name is unambiguously builder-owned, so it is found
@@ -465,6 +483,7 @@ namespace SAO.EditorTools
         public static void BuildMainMenu()
         {
             CreateMaterials();
+            if (!ShadersOk()) return;
             DisableExtraCameras(skipMenuCameras: false);   // must replace our own MenuCamera on re-run
 
             // ---- the floating castle, as a stack of shrinking tiers --------
@@ -802,6 +821,33 @@ namespace SAO.EditorTools
             return m;
         }
 
+        /// <summary>True when every shader the active pipeline needs exists.
+        /// Under URP the toon shader is optional (URP Lit fallback).</summary>
+        private static bool ShadersOk()
+        {
+            if (Shader.Find("SAO/SkyGradient") == null) return false;
+            if (GraphicsSettings.currentRenderPipeline == null && Shader.Find("SAO/Toon") == null)
+                return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Toon shader for the active render pipeline: SAO/Toon on Built-in,
+        /// SAO/ToonURP on URP. If the URP port is missing or failed to compile
+        /// (ShaderHasError), falls back to flat-color URP Lit so the greybox
+        /// renders with correct colors instead of magenta.
+        /// </summary>
+        private static Shader PickToonShader()
+        {
+            if (GraphicsSettings.currentRenderPipeline == null)
+                return Shader.Find("SAO/Toon");
+
+            var urpToon = Shader.Find("SAO/ToonURP");
+            if (urpToon != null && !ShaderUtil.ShaderHasError(urpToon))
+                return urpToon;
+            return Shader.Find("Universal Render Pipeline/Lit");
+        }
+
         private static Material ToonMat(string name, Color baseCol, Color shadowTint, float outlineWidth)
             => ToonMat(name, baseCol, shadowTint, outlineWidth, Color.black, 96f, Color.black);
 
@@ -809,20 +855,51 @@ namespace SAO.EditorTools
                                         Color specTint, float gloss, Color emission)
         {
             string path = MatFolder + "/" + name + ".mat";
+            Shader shader = PickToonShader();
+            if (shader == null)
+            {
+                Debug.LogError("[SAO] No usable toon shader for material '" + name + "'.");
+                return null;
+            }
+
             var m = AssetDatabase.LoadAssetAtPath<Material>(path);
             bool isNew = m == null;
-            if (isNew) m = new Material(Shader.Find("SAO/Toon"));
+            if (isNew) m = new Material(shader);
+            // Existing assets keep whatever shader they were created with —
+            // re-running the builder after a pipeline switch retargets them
+            // (this is what un-magentas materials generated under another RP).
+            else if (m.shader != shader) m.shader = shader;
 
-            m.SetColor("_Color", baseCol);
-            m.SetColor("_ShadowTint", shadowTint);
-            m.SetFloat("_Bands", 2f);
-            m.SetFloat("_OutlineWidth", outlineWidth);
-            m.SetFloat("_OutlineOn", outlineWidth > 0f ? 1f : 0f);
-            if (outlineWidth > 0f) m.EnableKeyword("OUTLINE_ON");
-            else m.DisableKeyword("OUTLINE_ON");
-            m.SetColor("_SpecularTint", specTint);
-            m.SetFloat("_Glossiness", gloss);
-            m.SetColor("_EmissionColor", emission);
+            if (shader.name.StartsWith("SAO/Toon"))
+            {
+                m.SetColor("_Color", baseCol);
+                m.SetColor("_ShadowTint", shadowTint);
+                m.SetFloat("_Bands", 2f);
+                m.SetFloat("_OutlineWidth", outlineWidth);
+                m.SetFloat("_OutlineOn", outlineWidth > 0f ? 1f : 0f);
+                if (outlineWidth > 0f) m.EnableKeyword("OUTLINE_ON");
+                else m.DisableKeyword("OUTLINE_ON");
+                m.SetColor("_SpecularTint", specTint);
+                m.SetFloat("_Glossiness", gloss);
+                m.SetColor("_EmissionColor", emission);
+            }
+            else
+            {
+                // URP Lit fallback: flat colors + emission, no bands/outline.
+                m.SetColor("_BaseColor", baseCol);
+                m.SetFloat("_Metallic", 0f);
+                m.SetFloat("_Smoothness", 0.15f);
+                if (emission.maxColorComponent > 0.001f)
+                {
+                    m.EnableKeyword("_EMISSION");
+                    m.SetColor("_EmissionColor", emission);
+                }
+                else
+                {
+                    m.DisableKeyword("_EMISSION");
+                    m.SetColor("_EmissionColor", Color.black);
+                }
+            }
 
             if (isNew) AssetDatabase.CreateAsset(m, path);
             else EditorUtility.SetDirty(m);
@@ -832,9 +909,11 @@ namespace SAO.EditorTools
         private static Material SkyMat(string name, Color top, Color horizon, Color bottom)
         {
             string path = MatFolder + "/" + name + ".mat";
+            var shader = Shader.Find("SAO/SkyGradient");   // unlit: works in both pipelines
             var m = AssetDatabase.LoadAssetAtPath<Material>(path);
             bool isNew = m == null;
-            if (isNew) m = new Material(Shader.Find("SAO/SkyGradient"));
+            if (isNew) m = new Material(shader);
+            else if (m.shader != shader) m.shader = shader;
 
             m.SetColor("_TopColor", top);
             m.SetColor("_HorizonColor", horizon);

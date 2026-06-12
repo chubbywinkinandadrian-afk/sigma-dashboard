@@ -14,6 +14,15 @@ greybox piece can be swapped for a real model later without touching code.
 > ForwardAdd lantern pass) needs no Renderer Features there. Full rationale in
 > `Docs/VisualStyleGuide.md`.
 
+> **On URP / Unity 6 instead?** That works too: the builders detect the active
+> pipeline and use `SAO/ToonURP` (same cel look, single-pass URP port) — and if
+> that shader is missing or broken they fall back to flat-color **URP Lit**
+> rather than rendering magenta. After switching pipelines, re-run
+> `Tools → SAO → 1. Create Toon Materials` once to retarget already-generated
+> materials. For post FX under URP, skip the PPv2 steps and use a global
+> Volume instead (Bloom intensity ~2.6 / threshold 1.05, Color Adjustments,
+> Vignette — values from `Docs/VisualStyleGuide.md` §4 map across).
+
 ## Quickstart (~10 minutes)
 
 1. Create a new **3D (Built-in)** project in **Unity 2022.3 LTS**.
@@ -57,9 +66,12 @@ Assets/
     UI/MenuOrbitCamera.cs       slow cinematic orbit for the menu
     Editor/SAOSceneBuilder.cs   Tools > SAO > … one-click greybox builders
   Shaders/
-    SAOToon.shader              cel shader: outline + banded diffuse + sharp
-                                specular + rim + HDR emission + lantern pass
-    SAOSkyGradient.shader       painted gradient skybox
+    SAOToon.shader              cel shader (Built-in RP): outline + banded
+                                diffuse + sharp specular + rim + HDR emission
+                                + lantern pass
+    SAOToonURP.shader           the same cel look for URP / Unity 6
+                                (auto-selected by the builders)
+    SAOSkyGradient.shader       painted gradient skybox (works in both RPs)
 Docs/
   VisualStyleGuide.md           pipeline choice, shader guide, lighting + PPv2
                                 exact settings, inn art direction
