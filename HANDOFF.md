@@ -116,6 +116,9 @@ copied into the project (see `sao-aincrad-unity/README.md` Quickstart).
 - `Shader.Find("SAO/Toon")` is null until shaders import; builders guard with
   a dialog + early-out.
 - `Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")` is the 2022.3 builtin.
+- `SAOToonURP.shader` targets Unity 6.1+ (`_CLUSTER_LIGHT_LOOP` keyword). On
+  older URP versions the plain Forward path still works, but Forward+ lantern
+  lighting would need the pre-rename `_FORWARD_PLUS` keyword re-added.
 - The renames are string-only (object names, UI text, scene-name default, menu
   label) — no type, namespace, or API changes, so no new compile surface.
 
