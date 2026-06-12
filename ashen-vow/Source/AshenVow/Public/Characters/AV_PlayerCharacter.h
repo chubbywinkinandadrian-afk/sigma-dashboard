@@ -69,7 +69,7 @@ public:
 
 	/** Placeholder anim/SFX hooks. */
 	UFUNCTION(BlueprintImplementableEvent, Category = "AshenVow|Player", meta = (DisplayName = "On Dodge (BP)"))
-	void OnDodgeBP(FVector DodgeDirection);
+	void OnDodgeBP(FVector InDodgeDirection);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "AshenVow|Player", meta = (DisplayName = "On Flask Used (BP)"))
 	void OnFlaskUsedBP();

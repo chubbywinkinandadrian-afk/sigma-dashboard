@@ -19,3 +19,6 @@ Build/
 # Keep Content placeholder folders but ignore bulky local-only caches
 Content/Collections/
 Content/Developers/
+
+# Engine template content (126 MB, reproducible: Tools/setup_mac.sh re-copies it)
+Content/Characters/
