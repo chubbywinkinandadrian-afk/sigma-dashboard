@@ -253,6 +253,7 @@ private:
 	int32 DodgePhase = -1; // -1 none, 0 startup, 1 active (i-frames), 2 recovery
 	FVector DodgeDirection = FVector::ForwardVector;
 	FRotator MeshBaseRelativeRotation = FRotator(0.f, -90.f, 0.f); // captured at BeginPlay
+	FVector MeshBaseRelativeLocation = FVector(0.f, 0.f, -89.f);   // captured at BeginPlay
 	FVector2D LastMoveInput = FVector2D::ZeroVector;
 
 	// Attack combo / buffering

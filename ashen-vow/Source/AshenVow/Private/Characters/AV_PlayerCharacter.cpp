@@ -95,6 +95,7 @@ void AAV_PlayerCharacter::BeginPlay()
 	OnAshChanged.Broadcast(AshCount);
 
 	MeshBaseRelativeRotation = GetMesh()->GetRelativeRotation();
+	MeshBaseRelativeLocation = GetMesh()->GetRelativeLocation();
 
 	LockOnComponent->OnTargetLocked.AddDynamic(this, &AAV_PlayerCharacter::HandleTargetLocked);
 	LockOnComponent->OnTargetReleased.AddDynamic(this, &AAV_PlayerCharacter::HandleTargetReleased);
@@ -403,6 +404,7 @@ void AAV_PlayerCharacter::TickDodge(float DeltaTime)
 	if (ActionState != EAV_ActionState::Dodging)
 	{
 		HealthComponent->SetInvulnerable(false);
+		GetMesh()->SetRelativeLocation(MeshBaseRelativeLocation);
 		GetMesh()->SetRelativeRotation(MeshBaseRelativeRotation);
 		DodgePhase = -1;
 		return;
@@ -411,13 +413,15 @@ void AAV_PlayerCharacter::TickDodge(float DeltaTime)
 	DodgeTimeElapsed += DeltaTime;
 
 	// Procedural forward roll: tumble the mesh a full turn along the roll
-	// direction (placeholder until a real roll animation replaces it; if a
-	// DodgeMontage is assigned, the montage is used and the spin is skipped).
+	// direction, pivoting around the BODY CENTER (capsule middle), not the
+	// mesh origin at the feet — feet-pivot looks like falling over.
+	// Placeholder until a real roll anim is assigned to DodgeMontage.
 	if (!DodgeMontage)
 	{
 		const float SpinDuration = DodgeStartupTime + DodgeActiveTime + DodgeRecoveryTime * 0.6f;
 		const float SpinAlpha = FMath::Clamp(DodgeTimeElapsed / SpinDuration, 0.f, 1.f);
-		const FQuat SpinQuat(FRotator(-360.f * SpinAlpha, 0.f, 0.f)); // nose-down tumble in actor space
+		const FQuat SpinQuat(FRotator(-360.f * SpinAlpha, 0.f, 0.f)); // nose-down forward tumble
+		GetMesh()->SetRelativeLocation(SpinQuat.RotateVector(MeshBaseRelativeLocation));
 		GetMesh()->SetRelativeRotation(SpinQuat * FQuat(MeshBaseRelativeRotation));
 	}
 
@@ -443,6 +447,7 @@ void AAV_PlayerCharacter::TickDodge(float DeltaTime)
 
 	if (DodgePhase == 2 && DodgeTimeElapsed >= DodgeStartupTime + DodgeActiveTime + DodgeRecoveryTime)
 	{
+		GetMesh()->SetRelativeLocation(MeshBaseRelativeLocation);
 		GetMesh()->SetRelativeRotation(MeshBaseRelativeRotation);
 		DodgePhase = -1;
 		SetActionState(EAV_ActionState::Idle);
@@ -578,6 +583,7 @@ void AAV_PlayerCharacter::ResetForRespawn(const FTransform& RespawnTransform)
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	GetMesh()->SetRelativeLocation(MeshBaseRelativeLocation);
 	GetMesh()->SetRelativeRotation(MeshBaseRelativeRotation);
 	ResetAnimationState();
 
