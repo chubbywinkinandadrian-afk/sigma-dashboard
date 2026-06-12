@@ -9,11 +9,29 @@
 #include "Systems/AV_MemoryThreadSubsystem.h"
 #include "Vow/AV_VowTypes.h"
 #include "World/AV_AshenAltar.h"
+#include "UI/AV_GameHUD.h"
 #include "Blueprint/UserWidget.h"
 
 bool AAV_PlayerController::HasDeathScreenWidget() const
 {
 	return DeathScreenClass != nullptr;
+}
+
+bool AAV_PlayerController::IsDialogueWidgetActive() const
+{
+	return DialogueWidget && DialogueWidget->IsInViewport();
+}
+
+void AAV_PlayerController::PushNotification(const FText& Message)
+{
+	if (HUDWidget)
+	{
+		HUDWidget->ShowNotification(Message);
+	}
+	else if (AAV_GameHUD* CanvasHUD = Cast<AAV_GameHUD>(GetHUD()))
+	{
+		CanvasHUD->PushNotification(Message);
+	}
 }
 
 void AAV_PlayerController::BeginPlay()
@@ -103,6 +121,8 @@ void AAV_PlayerController::StartDialogue(AAV_NPCBase* NPC)
 	ActiveDialogueNPC = NPC;
 	DialogueLineIndex = 0;
 
+	// With a WBP assigned, it displays the session (cursor + clickable Continue).
+	// Without one, the canvas HUD draws the panel and F advances — same session.
 	if (DialogueWidgetClass)
 	{
 		if (!DialogueWidget)
@@ -114,18 +134,9 @@ void AAV_PlayerController::StartDialogue(AAV_NPCBase* NPC)
 			DialogueWidget->AddToViewport(5);
 		}
 		SetUIInputMode(true);
-		ProcessCurrentDialogueLine();
 	}
-	else
-	{
-		// No dialogue UI assigned: still deliver the content (threads + rewards).
-		while (DialogueLineIndex < ActiveDialogueLines.Num())
-		{
-			ProcessCurrentDialogueLine();
-			++DialogueLineIndex;
-		}
-		EndDialogue();
-	}
+
+	ProcessCurrentDialogueLine();
 }
 
 void AAV_PlayerController::AdvanceDialogue()
@@ -329,27 +340,18 @@ void AAV_PlayerController::SetUIInputMode(bool bUIOpen)
 
 void AAV_PlayerController::HandleMemoryThreadAdded(const FAV_MemoryThreadEntry& Entry)
 {
-	if (HUDWidget)
-	{
-		HUDWidget->ShowNotification(FText::Format(
-			NSLOCTEXT("AshenVow", "ThreadToast", "Memory Thread — {0}"), Entry.Text));
-	}
+	PushNotification(FText::Format(
+		NSLOCTEXT("AshenVow", "ThreadToast", "Memory Thread — {0}"), Entry.Text));
 }
 
 void AAV_PlayerController::HandleVowUnlocked(const FAV_VowDefinition& Vow)
 {
-	if (HUDWidget)
-	{
-		HUDWidget->ShowNotification(FText::Format(
-			NSLOCTEXT("AshenVow", "VowUnlockToast", "Vow fragment found: {0}"), Vow.DisplayName));
-	}
+	PushNotification(FText::Format(
+		NSLOCTEXT("AshenVow", "VowUnlockToast", "Vow fragment found: {0}"), Vow.DisplayName));
 }
 
 void AAV_PlayerController::HandleVowEquipped(const FAV_VowDefinition& Vow)
 {
-	if (HUDWidget)
-	{
-		HUDWidget->ShowNotification(FText::Format(
-			NSLOCTEXT("AshenVow", "VowEquipToast", "Vow sworn: {0}"), Vow.DisplayName));
-	}
+	PushNotification(FText::Format(
+		NSLOCTEXT("AshenVow", "VowEquipToast", "Vow sworn: {0}"), Vow.DisplayName));
 }

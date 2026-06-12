@@ -120,6 +120,12 @@ protected:
 	void Input_ToggleLockOn(const FInputActionValue& Value);
 	void Input_VowAbility(const FInputActionValue& Value);
 	void Input_ToggleJournal(const FInputActionValue& Value);
+	void Input_VowSlot1(const FInputActionValue& Value) { TrySelectVowSlot(0); }
+	void Input_VowSlot2(const FInputActionValue& Value) { TrySelectVowSlot(1); }
+	void Input_VowSlot3(const FInputActionValue& Value) { TrySelectVowSlot(2); }
+
+	/** Equip the Nth unlocked Vow — only while resting at an altar (keys 1-3). */
+	void TrySelectVowSlot(int32 SlotIndex);
 
 	/** True while dialogue/journal/altar menu is open — gameplay input is ignored. */
 	bool IsGameplayBlockedByUI() const;
@@ -192,6 +198,15 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Input")
 	TObjectPtr<UInputAction> VowAbilityAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Input")
+	TObjectPtr<UInputAction> VowSlot1Action;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Input")
+	TObjectPtr<UInputAction> VowSlot2Action;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Input")
+	TObjectPtr<UInputAction> VowSlot3Action;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AshenVow|Input")
 	TObjectPtr<UInputAction> JournalAction;

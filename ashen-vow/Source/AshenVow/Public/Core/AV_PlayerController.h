@@ -47,6 +47,16 @@ public:
 	UFUNCTION(BlueprintPure, Category = "AshenVow|Dialogue")
 	FText GetCurrentDialogueLineText() const;
 
+	UFUNCTION(BlueprintPure, Category = "AshenVow|Dialogue")
+	bool IsInDialogue() const { return ActiveDialogueNPC != nullptr; }
+
+	/** True when a WBP dialogue box is on screen (the canvas HUD then stays quiet). */
+	bool IsDialogueWidgetActive() const;
+
+	/** Toast routing: WBP HUD if present, otherwise the canvas HUD. */
+	UFUNCTION(BlueprintCallable, Category = "AshenVow|UI")
+	void PushNotification(const FText& Message);
+
 	// ---- Altar menu ----
 	void OpenAltarMenu(AAV_AshenAltar* Altar);
 

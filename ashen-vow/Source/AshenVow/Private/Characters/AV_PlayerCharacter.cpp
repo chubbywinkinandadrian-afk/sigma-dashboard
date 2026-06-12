@@ -140,6 +140,9 @@ void AAV_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	Input->BindAction(LockOnAction, ETriggerEvent::Started, this, &AAV_PlayerCharacter::Input_ToggleLockOn);
 	Input->BindAction(VowAbilityAction, ETriggerEvent::Started, this, &AAV_PlayerCharacter::Input_VowAbility);
 	Input->BindAction(JournalAction, ETriggerEvent::Started, this, &AAV_PlayerCharacter::Input_ToggleJournal);
+	Input->BindAction(VowSlot1Action, ETriggerEvent::Started, this, &AAV_PlayerCharacter::Input_VowSlot1);
+	Input->BindAction(VowSlot2Action, ETriggerEvent::Started, this, &AAV_PlayerCharacter::Input_VowSlot2);
+	Input->BindAction(VowSlot3Action, ETriggerEvent::Started, this, &AAV_PlayerCharacter::Input_VowSlot3);
 
 	if (JumpAction)
 	{
@@ -168,6 +171,9 @@ void AAV_PlayerCharacter::CreateDefaultInputAssetsIfNeeded()
 	if (!LockOnAction)      { LockOnAction      = MakeRuntimeAction(this, EInputActionValueType::Boolean); }
 	if (!VowAbilityAction)  { VowAbilityAction  = MakeRuntimeAction(this, EInputActionValueType::Boolean); }
 	if (!JournalAction)     { JournalAction     = MakeRuntimeAction(this, EInputActionValueType::Boolean); }
+	if (!VowSlot1Action)    { VowSlot1Action    = MakeRuntimeAction(this, EInputActionValueType::Boolean); }
+	if (!VowSlot2Action)    { VowSlot2Action    = MakeRuntimeAction(this, EInputActionValueType::Boolean); }
+	if (!VowSlot3Action)    { VowSlot3Action    = MakeRuntimeAction(this, EInputActionValueType::Boolean); }
 
 	// WASD -> 2D axis. W/S land on Y via swizzle, A is negated X.
 	{
@@ -210,6 +216,9 @@ void AAV_PlayerCharacter::CreateDefaultInputAssetsIfNeeded()
 	DefaultMappingContext->MapKey(LockOnAction, EKeys::Q);
 	DefaultMappingContext->MapKey(VowAbilityAction, EKeys::E);
 	DefaultMappingContext->MapKey(JournalAction, EKeys::Tab);
+	DefaultMappingContext->MapKey(VowSlot1Action, EKeys::One);
+	DefaultMappingContext->MapKey(VowSlot2Action, EKeys::Two);
+	DefaultMappingContext->MapKey(VowSlot3Action, EKeys::Three);
 }
 
 void AAV_PlayerCharacter::Tick(float DeltaTime)
@@ -352,6 +361,15 @@ void AAV_PlayerCharacter::Input_HeavyAttack(const FInputActionValue& Value)
 
 void AAV_PlayerCharacter::Input_Interact(const FInputActionValue& Value)
 {
+	// F advances canvas-drawn dialogue (the WBP dialogue box uses its own button).
+	if (AAV_PlayerController* PC = Cast<AAV_PlayerController>(GetController()))
+	{
+		if (PC->IsInDialogue() && !PC->IsDialogueWidgetActive())
+		{
+			PC->AdvanceDialogue();
+			return;
+		}
+	}
 	if (bResting)
 	{
 		// F while seated = rise, but only once the altar menu has been left.
@@ -418,6 +436,21 @@ bool AAV_PlayerCharacter::IsGameplayBlockedByUI() const
 {
 	const AAV_PlayerController* PC = Cast<AAV_PlayerController>(GetController());
 	return PC && PC->IsUIBlockingGameplay();
+}
+
+void AAV_PlayerCharacter::TrySelectVowSlot(int32 SlotIndex)
+{
+	// Vows are only re-sworn at an altar's flame (the WBP menu blocks via UI when open).
+	if (!bResting || !IsAlive() || IsGameplayBlockedByUI())
+	{
+		return;
+	}
+
+	const TArray<FAV_VowDefinition> Unlocked = VowComponent->GetUnlockedVowDefinitions();
+	if (Unlocked.IsValidIndex(SlotIndex))
+	{
+		VowComponent->EquipVow(Unlocked[SlotIndex].VowId);
+	}
 }
 
 void AAV_PlayerCharacter::HandleAttackHitLanded(AActor* HitActor)

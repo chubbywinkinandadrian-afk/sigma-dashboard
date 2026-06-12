@@ -58,6 +58,12 @@ Tab Memory Thread journal.
 
 Vow Energy regenerates slowly and builds on landed hits; altars refill it.
 
+**No-UMG path:** everything above works on the canvas HUD alone — dialogue is
+drawn on screen and advanced with F, notifications toast top-center, the Vow
+Energy bar + equipped Vow name sit under stamina, and while resting at an altar
+the unlocked Vows are listed and swapped with keys **1-3**. The WBP widgets
+(below) replace each piece only when assigned.
+
 ---
 
 ## One-time editor setup (~30 minutes)
@@ -176,17 +182,19 @@ during the polish milestone.
    and add them to the player's VowComponent → Extra Vow Assets.
 
 ### Milestone 2 sanity checklist
-1. Talk to Elya (F): dialogue box advances through five lines; the White Sun
-   Memory Thread toast appears; after the last line you receive and auto-equip
-   the Vow of Ash ("Vow sworn" toast).
-2. Tab opens the journal listing every discovered Memory Thread; Tab/Close exits.
+1. Talk to Elya (F): the dialogue panel advances through five lines (F or the
+   WBP Continue button); the White Sun Memory Thread toast appears; after the
+   last line you receive and auto-equip the Vow of Ash ("Vow sworn" toast).
+2. Tab opens the journal listing every discovered Memory Thread (WBP journal —
+   the canvas path shows threads as toasts when discovered).
 3. With Vow of Ash below 35% HP, soldier kills get noticeably faster (+25%);
    flask heals visibly less (45 → ~34).
 4. E with ≥40 Vow Energy fires Ash Burst: nearby soldiers take 30 damage and
    stagger; energy bar drops; 8 s cooldown.
 5. Landing hits visibly builds the Vow Energy bar.
-6. Altar now opens Rest / Change Vow / Leave; switching to Vow of Iron slows
-   stamina regen and lets you tank a soldier hit with ~20% less damage.
+6. Resting at the altar lists your sworn Vows — press 1-3 to change (or use the
+   WBP Rest / Change Vow / Leave menu if assigned); switching to Vow of Iron
+   slows stamina regen and lets you tank a soldier hit with ~20% less damage.
 7. Pickups grant Ash / the Iron fragment / a Memory Thread, show a toast, and
    never reappear after altar rest or death.
 8. Talking to Elya again plays her repeat line and adds the gate-knight thread.

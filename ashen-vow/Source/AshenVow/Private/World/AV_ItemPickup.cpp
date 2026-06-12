@@ -103,12 +103,9 @@ void AAV_ItemPickup::Interact_Implementation(AActor* Interactor)
 		}
 	}
 
-	if (const AAV_PlayerController* PC = Cast<AAV_PlayerController>(Player->GetController()))
+	if (AAV_PlayerController* PC = Cast<AAV_PlayerController>(Player->GetController()))
 	{
-		if (UAV_HUDWidget* HUD = PC->GetHUDWidget())
-		{
-			HUD->ShowNotification(Notification);
-		}
+		PC->PushNotification(Notification);
 	}
 
 	OnPickedUpBP(Player);
