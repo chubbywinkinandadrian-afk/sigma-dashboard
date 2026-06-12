@@ -5,6 +5,7 @@ using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using SAO.Interaction;
 using SAO.Player;
 using SAO.UI;
 
@@ -276,12 +277,13 @@ namespace SAO.EditorTools
             Cyl("BarStool_L", new Vector3(-1.2f, 0.325f, 2.9f), new Vector3(0.34f, 0.325f, 0.34f), "Wood_Mid", parent);
             Cyl("BarStool_R", new Vector3(1.2f, 0.325f, 2.9f),  new Vector3(0.34f, 0.325f, 0.34f), "Wood_Mid", parent);
 
-            // Debug target for SAOInteractionProbe: a small red sign standing
-            // on the counter at readable height (cube primitive = BoxCollider,
-            // so the probe ray hits it out of the box). Placeholder until real
-            // interactables (doors / NPCs / notice boards) exist — then delete.
-            Box("Debug_Interactable_Sign", new Vector3(1.4f, 1.275f, 3.45f),
+            // First real IInteractable: a small red sign on the counter at
+            // readable height. Cube primitive = BoxCollider for the probe to
+            // hit; DebugSignInteractable supplies the prompt and the on-use
+            // log. Doors / NPCs / notice boards follow this same pattern.
+            var sign = Box("Debug_Interactable_Sign", new Vector3(1.4f, 1.275f, 3.45f),
                 new Vector3(0.55f, 0.35f, 0.06f), "Fabric_Red", parent);
+            sign.AddComponent<DebugSignInteractable>();
 
             for (int i = 0; i < InnTablePositions.Length; i++)
                 BuildTable(parent, InnTablePositions[i], i);
@@ -425,13 +427,13 @@ namespace SAO.EditorTools
             camGo.AddComponent<AudioListener>();
 
             player.AddComponent<FPSController>();        // finds the child camera on Awake
-            player.AddComponent<SAOInteractionProbe>();  // E-key debug probe; same camera lookup
+            player.AddComponent<SAOInteractionProbe>();  // crosshair sensor: drives IInteractable + the HUD prompt
 
             BuildHud(player);
 
             Selection.activeGameObject = player;
             MarkDirty();
-            Debug.Log("[SAO] Player rig + HUD built. Press Play. (WASD / mouse / Space / Shift, E = interact probe)");
+            Debug.Log("[SAO] Player rig + HUD built. Press Play. (WASD / mouse / Space / Shift, E = interact)");
         }
 
         private static void BuildHud(GameObject player)
@@ -468,6 +470,34 @@ namespace SAO.EditorTools
             so.FindProperty("fillImage").objectReferenceValue = fillImg;
             so.FindProperty("canvasGroup").objectReferenceValue = barRoot.GetComponent<CanvasGroup>();
             so.ApplyModifiedPropertiesWithoutUndo();
+
+            // ---- interaction prompt, center-bottom -------------------------
+            // Hidden by default (InteractionPromptUI zeroes the CanvasGroup
+            // alpha on Awake); appears while an IInteractable is targeted.
+            var promptRoot = new GameObject("InteractionPrompt",
+                                            typeof(RectTransform), typeof(CanvasGroup), typeof(Image));
+            promptRoot.transform.SetParent(canvasGo.transform, false);
+            var prt = (RectTransform)promptRoot.transform;
+            prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0f);
+            prt.pivot = new Vector2(0.5f, 0f);
+            prt.anchoredPosition = new Vector2(0f, 110f);
+            prt.sizeDelta = new Vector2(460f, 44f);
+            promptRoot.GetComponent<Image>().color = new Color(0.04f, 0.05f, 0.09f, 0.62f);
+
+            var promptLabel = MakeText(promptRoot.transform, "Press E - Interact", 24,
+                                       new Color(0.96f, 0.93f, 0.85f));
+            var plrt = (RectTransform)promptLabel.transform;
+            plrt.anchorMin = Vector2.zero;
+            plrt.anchorMax = Vector2.one;
+            plrt.offsetMin = Vector2.zero;
+            plrt.offsetMax = Vector2.zero;
+
+            var promptUi = promptRoot.AddComponent<InteractionPromptUI>();
+            var pso = new SerializedObject(promptUi);
+            pso.FindProperty("probe").objectReferenceValue = player.GetComponent<SAOInteractionProbe>();
+            pso.FindProperty("label").objectReferenceValue = promptLabel;
+            pso.FindProperty("canvasGroup").objectReferenceValue = promptRoot.GetComponent<CanvasGroup>();
+            pso.ApplyModifiedPropertiesWithoutUndo();
         }
 
         // ================================================================== //

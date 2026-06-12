@@ -1,152 +1,136 @@
 # HANDOFF — Skybound Realm Unity starter kit
 
-Status snapshot for the next contributor / reviewer. Updated 2026-06-11.
+Status snapshot for the next contributor / reviewer. Updated 2026-06-12.
 This is an **original anime-inspired prototype using placeholder content** —
 all public-facing names (Skybound Realm, First Haven, Skybound_Citadel) were
 invented for this kit; no franchise names or assets are used.
 
 ## 1. Branch
 
-`claude/cool-faraday-ebxfng` (tracks `origin/claude/cool-faraday-ebxfng`).
-PR #1 ("Rework SAO inn greybox scene builder") merged the inn rework into
-`main`; the commits below land after it.
+`feature/interaction-foundation-v1` (branched from `main` at `116b937`,
+after PR #3). Earlier work lived on `claude/cool-faraday-ebxfng`, fully
+merged into `main` via PRs #1–#3.
 
 ## 2. Latest commit
 
-`4d24321` — "Scrub franchise names from generated content; root-only sun
-teardown" (Codex review follow-ups).
-(This HANDOFF.md update lands in a follow-up docs-only commit.)
+`afb0b4f` — "Interaction Foundation v1: IInteractable, prompt UI, self-hit
+fix". (This HANDOFF update lands in a follow-up docs-only commit; the PR into
+`main` contains both and awaits Codex review — do not merge without it.)
 
 Recent history:
 
 | Commit | What |
 |---|---|
-| `4d24321` | Franchise-name scrub + sun teardown restricted to scene roots |
-| `57af768` | HANDOFF.md added |
-| `eab0da7` | Interaction probe + menu-safe camera disabling + debug sign |
-| `56458d1` | `BuildPlayer()` made idempotent (teardown before rebuild) |
-| `485091f` | `BuildInn()` rework: idempotent, grouped hierarchy, real window light (merged via PR #1) |
-| `023e8a9` | Initial starter kit (controller, shaders, builders, docs) |
+| `afb0b4f` | **Interaction Foundation v1** (this milestone) |
+| `116b937` | Merge PR #3: cluster-loop keyword only, stricter ShadersOk |
+| `2c0e6ec` | Codex fixes on the URP shader work |
+| `21f5f12` | Merge PR #2: URP support + cleanups |
+| `8cd5d11` | URP magenta fix: SAO/ToonURP + pipeline-aware builder |
 
-## 3. Files changed (in `4d24321`)
+## 3. Files changed (in `afb0b4f`)
 
-- `sao-aincrad-unity/Assets/Scripts/Editor/SAOSceneBuilder.cs` — teardown fix + renames
-- `sao-aincrad-unity/Assets/Scripts/UI/MainMenuController.cs` — default scene name
-- `sao-aincrad-unity/Assets/Scripts/UI/MenuOrbitCamera.cs` — comment only
-- `sao-aincrad-unity/Assets/Scripts/Player/FPSController.cs` — comment only
-- `sao-aincrad-unity/README.md`, `Docs/VisualStyleGuide.md`, `Docs/MainMenuScene.md`
+- `sao-aincrad-unity/Assets/Scripts/Interaction/IInteractable.cs` — **new**
+- `sao-aincrad-unity/Assets/Scripts/Interaction/DebugSignInteractable.cs` — **new**
+- `sao-aincrad-unity/Assets/Scripts/UI/InteractionPromptUI.cs` — **new**
+- `sao-aincrad-unity/Assets/Scripts/Player/SAOInteractionProbe.cs` — reworked
+- `sao-aincrad-unity/Assets/Scripts/Editor/SAOSceneBuilder.cs` — wiring only
+- `sao-aincrad-unity/README.md` — controls/file map/roadmap
 
 ## 4. Summary of what changed
 
-- **Sun teardown restricted (Codex finding 1):** `BuildInn()` no longer runs a
-  `GameObject.Find("Sun_LateAfternoon")` delete loop that could destroy a
-  user-authored child light sharing the name. Stray suns from pre-hierarchy
-  builds were scene-root objects, so only the `GetRootGameObjects()` scan
-  handles that name now. The inn root (unambiguously builder-owned) is still
-  found anywhere, with the legacy name kept for migration.
-- **Franchise-name scrub (Codex finding 2):** generated/public-facing names
-  are now original placeholders — menu title `S K Y B O U N D   R E A L M`,
-  subtitle "— Floor 1 · First Haven —", castle `Skybound_Citadel`, game scene
-  `FirstHaven`, inn root `Inn_FirstHaven`, menu item "2. Build Inn Greybox
-  (First Haven)". `MainMenuController.gameSceneName` defaults to `FirstHaven`.
-  README/docs titles and scene names updated; README IP note rewritten as an
-  original-prototype statement.
-- **Camera disabling (Codex finding 3):** verified, no change needed — the fix
-  already shipped in `eab0da7` (Codex reviewed the earlier merged PR).
-  `BuildPlayer()` calls `DisableExtraCameras(skipMenuCameras: true)`, which
-  skips `MenuCamera`/`MainMenuCamera`/`UICamera` or any camera carrying
-  `MenuOrbitCamera`, logging skips; the menu builder passes `false` so its own
-  re-run still replaces its previous camera.
-- Earlier work on this branch: `SAOInteractionProbe` (E-key crosshair raycast
-  foundation, no gameplay systems), `Debug_Interactable_Sign` on the bar,
-  idempotent `BuildPlayer()`.
+The loop is now: **look at interactable → prompt appears → press E →
+`Interact(player)` runs.**
 
-## 5. How to test in Unity
+- `IInteractable` (`SAO.Interaction`): `string PromptText { get; }` +
+  `void Interact(GameObject interactor)`. Runtime-only, minimal. Implement on
+  or above an object's collider; the probe resolves it via
+  `GetComponentInParent`.
+- `SAOInteractionProbe` is now a sensor + dispatcher. **Self-hit fix:** PhysX
+  reports the player's own CharacterController at 0.00 m when the ray starts
+  inside it (the reported `Player at 0.00 m` logs). The probe now uses
+  `RaycastNonAlloc` and picks the nearest hit whose collider is *not* a child
+  of the player rig. Read-only state for UI: `CurrentInteractable`,
+  `CurrentTarget`, `CurrentHit`, `HasInteractable`, `CurrentPrompt`.
+- `InteractionPromptUI`: center-bottom prompt (legacy `UnityEngine.UI.Text`,
+  matching the rest of the kit), toggled via CanvasGroup alpha, hidden when
+  nothing is targeted, never blocks raycasts.
+- `DebugSignInteractable` on the inn's `Debug_Interactable_Sign`: prompt
+  "Press E - Read Sign", logs `[Interaction] Debug sign interacted by Player`.
+- Builder wiring: sign gets the component in `BuildInn()`; `BuildHud()` adds
+  the `InteractionPrompt` object and wires `probe`/`label`/`canvasGroup` via
+  `SerializedObject` (same pattern as the stamina bar).
 
-Prereq: Unity 2022.3 LTS, Built-in RP project, `sao-aincrad-unity/Assets/`
-copied into the project (see `sao-aincrad-unity/README.md` Quickstart).
+## 5. How to test in Unity (the milestone's test condition)
 
-1. Empty scene → `Tools → SAO → 2. Build Inn Greybox (First Haven)` → root
-   object is `Inn_FirstHaven`; red sign on the bar counter.
-2. `Tools → SAO → 3. Build FPS Player Rig` → Play → walk to the bar, press
-   **E** on the sign → `[SAO] Interact: 'Debug_Interactable_Sign' …`.
-3. Save as `Assets/Scenes/FirstHaven.unity`; menu scene via
-   `Tools → SAO → 4` saved as `MainMenu` (index 0 in Build Settings) — title
-   reads SKYBOUND REALM, Start Game loads `FirstHaven`.
-4. Teardown-safety check: parent a light named `Sun_LateAfternoon` under any
-   user object, re-run menu item 2 → the light survives (it is deactivated by
-   `DisableExtraDirectionalLights` if directional, but never deleted).
-5. Re-run items 2 and 3 repeatedly → no duplicates. A scene built before the
-   rename (root `Inn_TownOfBeginnings`) is also torn down correctly.
+Unity 6.3 LTS URP project with the kit's `Assets/` imported:
+
+1. `Tools → SAO → 2. Build Inn Greybox (First Haven)`
+2. `Tools → SAO → 3. Build FPS Player Rig`
+3. Play:
+   - Walk (WASD/mouse) to the bar counter and look at the red sign →
+     a center-bottom prompt "Press E - Read Sign" appears.
+   - Press E → console logs `[Interaction] Debug sign interacted by Player`.
+   - Look away → prompt hides. Look at a wall and press E →
+     `'Wall_…' is not interactable.` (debug log, can be muted via
+     `logOnInteract`).
+   - **No more `Player at 0.00 m` self-hit logs.**
+   - Scene view with Gizmos: ray is green on interactables, yellow on plain
+     geometry, gray on miss.
 
 ## 6. Known limitations
 
-- **Migration:** scenes saved before `4d24321` are named `TownOfBeginnings`
-  and their serialized `gameSceneName` still points there — they keep working
-  as-is, but rebuilt menu scenes load `FirstHaven`, so re-save the game scene
-  under the new name and update Build Settings.
-- **Internal identifiers still say SAO** (future cleanup, deliberately kept to
-  avoid wide churn): `SAO.*` namespaces, `Tools/SAO` menu path, `SAO/Toon` +
-  `SAO/SkyGradient` shader paths, `[SAO]` log prefix, `sao.save.exists`
-  PlayerPrefs key, `Assets/SAO_Generated/`, and the `sao-aincrad-unity/` repo
-  folder. None are player-facing; renaming touches shaders, materials, every
-  script and all docs at once, so do it as a dedicated PR if at all.
-- The probe only logs; no `IInteractable` contract, prompt UI, or crosshair yet.
-- Accidental `BuildPlayer()` in the menu scene leaves two active cameras +
-  AudioListeners (warned, nothing destroyed) until undone.
+- One interactable type exists (the debug sign); doors/NPCs/notice boards are
+  intentionally absent — each is "one component" away via `IInteractable`.
+- The prompt is instant show/hide (no fade) and there is no crosshair dot yet.
+- Prompt text is the interactable's full line ("Press E - …"); if the
+  interact key is rebound in the probe, prompt strings don't auto-update —
+  fine for prototype, revisit when key rebinding becomes real.
+- `RaycastNonAlloc` buffer is 8; more than 8 overlapping colliders along the
+  3 m ray could hide the nearest target (not reachable in the greybox).
+- Pre-existing gaps unchanged: `BuildMainMenu()` not idempotent; PPv2/Volume
+  post FX manual; internal `SAO` identifiers kept (see older notes below).
 - Reserved teardown names: `Inn_FirstHaven`, `Inn_TownOfBeginnings` (legacy),
   root-level `Sun_LateAfternoon`, `Player`, `PlayerHUD`.
-- **`BuildMainMenu()` is NOT idempotent** — re-running duplicates
-  `Skybound_Citadel` / `MainMenuCanvas` / `Sun_Dusk`. Known gap.
-- PPv2 profile (bloom/grading/vignette) is manual — `Docs/VisualStyleGuide.md` §4.
-- `sao-aincrad-unity/` is an asset/source package, not an installed Unity
-  project: no `ProjectSettings/`, `Packages/`, or `ProjectVersion.txt`.
 
 ## 7. Compile risks
 
-- Editor builder references runtime types (`FPSController`,
-  `SAOInteractionProbe`, `MenuOrbitCamera`); fine in the default assembly, but
-  `.asmdef` adoption later needs an Editor→runtime assembly reference.
-- `SAOInteractionProbe` has no obvious player-build editor-API risk from
-  static inspection (only `using UnityEngine`). Unity compilation was not run
-  in this source-package repo.
-- `Physics.DefaultRaycastLayers` as `LayerMask` initializer: valid const-int
-  implicit conversion (a bare LayerMask defaults to *Nothing*).
-- Legacy `Input.GetKeyDown` requires Active Input Handling = Input Manager (or Both).
-- `Shader.Find("SAO/Toon")` is null until shaders import; builders guard with
-  a dialog + early-out.
-- `Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")` is the 2022.3 builtin.
-- `SAOToonURP.shader` targets Unity 6.1+ (`_CLUSTER_LIGHT_LOOP` keyword). On
-  older URP versions the plain Forward path still works, but Forward+ lantern
-  lighting would need the pre-rename `_FORWARD_PLUS` keyword re-added.
-- The renames are string-only (object names, UI text, scene-name default, menu
-  label) — no type, namespace, or API changes, so no new compile surface.
+- All three new runtime files use only `UnityEngine`/`UnityEngine.UI` — no
+  `UnityEditor`. The builder (editor assembly) references the new runtime
+  types; fine in the default assembly, `.asmdef` adoption later needs an
+  Editor→runtime reference (pre-existing constraint).
+- `GetComponentInParent<IInteractable>()` with an interface type parameter is
+  supported in all target Unity versions.
+- `FindObjectOfType` in `InteractionPromptUI`'s fallback is obsolete-flagged
+  in Unity 6 (warning only) — kept for consistency with `StaminaBar` and
+  2022.3 compatibility; builder wiring means the fallback rarely runs.
+- Legacy `Input.GetKeyDown` requires Input Manager or Both (already the
+  project's setting).
+- `SAOToonURP.shader` targets Unity 6.1+ (`_CLUSTER_LIGHT_LOOP`); on older
+  URP versions the plain Forward path works, Forward+ lanterns would need the
+  pre-rename `_FORWARD_PLUS` keyword re-added.
+- Unity compilation was not run in this source-package repo — findings are
+  from static inspection.
 
 ## 8. Idempotency of `BuildInn()` / `BuildPlayer()`
 
-**Both still idempotent.**
-- `BuildInn()` destroys `Inn_FirstHaven` (and legacy `Inn_TownOfBeginnings`)
-  found anywhere, plus root-level-only stray `Sun_LateAfternoon`, before
-  rebuilding. The current build's sun lives inside the inn root, so it is
-  removed with it.
-- `BuildPlayer()` destroys `Player` and `PlayerHUD` the same way before
-  rebuilding. Running 2 then 3 any number of times converges to the same scene.
+**Both still idempotent — unchanged teardown.** The sign (and its
+`DebugSignInteractable`) lives inside `Inn_FirstHaven`; the prompt UI lives
+inside `PlayerHUD`. Both roots are destroyed by name before each rebuild, so
+re-running 2 and 3 converges to the same scene with no duplicates.
 
 ## 9. Grep/search checks run
 
-- `Aincrad|AINCRAD|TownOfBeginnings|Town of Beginnings|Sword Art` across the
-  repo — after the scrub, remaining hits are only the two intentional legacy
-  teardown strings in `SAOSceneBuilder.cs` and this HANDOFF's history notes.
-- `DisableExtraCameras` — definition + 2 call sites confirmed
-  (`skipMenuCameras: true` in BuildPlayer, `false` in BuildMainMenu); verifies
-  Codex finding 3 was already addressed in `eab0da7`.
-- Earlier session: `Interact|Raycast|GetKeyDown` (no pre-existing interaction
-  code; FPSController uses legacy Input).
+- `FindProperty("probe"/"label"/"canvasGroup")` vs `[SerializeField]` field
+  names in `InteractionPromptUI` — exact match (builder wiring can't silently
+  miss).
+- `AddComponent<DebugSignInteractable|SAOInteractionProbe|InteractionPromptUI>`
+  + `GetComponentInParent<IInteractable>` — each present exactly where
+  intended; no `UnityEditor` usage in the new runtime files.
 
 ## 10. Recommended next step
 
-Unchanged: a minimal `IInteractable` interface (`string Prompt { get; }`,
-`void Interact(GameObject who)`) invoked by `SAOInteractionProbe` on E, plus a
-HUD prompt label driven by `CurrentTarget`. Secondary cleanup candidates: make
-`BuildMainMenu()` idempotent; the internal `SAO` identifier rename (see §6) as
-its own dedicated PR.
+After this PR passes review: a crosshair dot + prompt fade polish, then the
+first real interactables — a door (`IInteractable` that swings the existing
+`Door_Hinge`) and a readable sign panel. Pre-existing cleanup candidates
+remain: idempotent `BuildMainMenu()`, internal `SAO` identifier rename as a
+dedicated PR.
