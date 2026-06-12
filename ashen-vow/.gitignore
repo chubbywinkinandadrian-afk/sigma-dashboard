@@ -1,0 +1,21 @@
+# Unreal Engine generated/intermediate files
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+.vs/
+.vscode/
+.idea/
+*.sln
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+*.xcodeproj
+*.xcworkspace
+
+# Keep Content placeholder folders but ignore bulky local-only caches
+Content/Collections/
+Content/Developers/
