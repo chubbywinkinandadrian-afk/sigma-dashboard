@@ -1,7 +1,9 @@
 # Re:Impact — Starting Life as a Gacha Game in Another World
 
 A browser-playable, Genshin-style gacha RPG re-skinned with the world and cast of
-**Re:Zero** — built as an unofficial, non-commercial fan prototype. Two ways to play,
+**Re:Zero** — built as an unofficial, non-commercial fan prototype.
+*(Looking for the engine version? The Unity port with the VRoid anime-character
+pipeline lives in `../rezero-impact-unity/`.)* Two ways to play,
 sharing one save: a menu game (gacha + turn-based battles) and a **3D open world**
 (Three.js) where you physically travel Lugunica to fight the same story.
 
