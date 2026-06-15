@@ -1,15 +1,15 @@
 {
   "updated": "2026-06-15",
-  "mode": "week",
-  "headline": "Warsh's debut FOMC presser hits Wednesday into a stagflation trap — 4.2% CPI, zero cut odds, and a Hormuz blockade still leaking at 15% capacity.",
-  "sub": "Kevin Warsh chairs his first FOMC meeting June 16–17 with the fed funds rate at 3.50–3.75% and virtually zero probability of a cut this year (CME FedWatch). May CPI at 4.2% YoY — a 3-year high driven by a 23.5% energy surge tied to the Iran-Hormuz crisis — makes any dovish pivot impossible. Trump's June 11 'deal essentially agreed' signal partially eased crude, but visible Hormuz traffic remains at just 15% of pre-war levels with global inventories draining into summer peak demand. Retail sales land the same morning as the rate decision; Warsh's dot-plot revisions and tone on energy-driven inflation are the week's defining signals.",
+  "mode": "close",
+  "headline": "BREAKING: U.S.-Iran peace deal signed, Hormuz full reopening authorized — the single biggest deflationary catalyst of 2026 just landed.",
+  "sub": "President Trump signed a framework MOU with Iran on June 15, fully authorizing the opening of the Strait of Hormuz and lifting the U.S. naval blockade. 60-day nuclear negotiations begin. Nasdaq surged 3.15% and S&P 500 gained 1.74% on the news. Crude prices falling sharply, energy inflation shock unwinding. FOMC still meets June 16–17 — the peace deal radically changes Warsh's inflation optics, though with May CPI still at 4.2% a rate cut remains off the table. Michigan 5-year inflation expectations fell to 3.4% from 3.9%, first sign the market is pricing the disinflation wave.",
   "events": [
-    { "text": "FOMC Decision + Warsh Debut Presser (Wed Jun 17)", "detail": "Hold at 3.50–3.75% certain; dot plot and Warsh tone on stagflation are the market movers", "tag": "HOT", "color": "red" },
-    { "text": "Hormuz Blockade — 15% Traffic, Inventories Draining", "detail": "~2.9M bpd escaping via clandestine flows; summer peak demand risks a crude price spike", "tag": "HOT", "color": "red" },
-    { "text": "May Retail Sales (Wed Jun 17, 8:30 ET)", "detail": "Consumer health test drops same morning as Fed decision — stagflation read", "tag": "KEY", "color": "purple" },
+    { "text": "BREAKING: U.S.-Iran Peace Deal Signed, Hormuz Reopening (Jun 15)", "detail": "Trump signed framework MOU; naval blockade lifted; Strait of Hormuz fully reopening this week. The brief's defined single biggest deflationary catalyst of 2026 has materialized — tape flips risk-on.", "tag": "HOT", "color": "red" },
+    { "text": "FOMC Decision + Warsh Debut Presser (Wed Jun 17)", "detail": "Hold at 3.50–3.75% still certain; but Hormuz reopening softens the energy inflation narrative — dot plot and Warsh tone are now critical with the supply shock fading", "tag": "HOT", "color": "red" },
+    { "text": "May Retail Sales (Wed Jun 17, 8:30 ET)", "detail": "Consumer health test drops same morning as Fed decision — stagflation read now in context of easing energy prices post-deal", "tag": "KEY", "color": "purple" },
     { "text": "May Housing Starts & Building Permits (Tue Jun 16)", "detail": "Rate-sensitive sector; signals whether 3.50–3.75% is biting the real economy", "tag": "KEY", "color": "purple" },
-    { "text": "SPCX Post-IPO Digestion", "detail": "SpaceX's $1.75T debut last week pulled Nasdaq breadth lower; watch tech rotation continue", "tag": "WATCH", "color": "yellow" },
-    { "text": "Iran Peace Deal & Hormuz Reopening Timeline", "detail": "No formal deal signed yet; confirmed reopening is the single biggest deflationary catalyst of 2026", "tag": "WATCH", "color": "yellow" }
+    { "text": "SPCX Post-IPO Digestion", "detail": "SpaceX up ~6% premarket on risk-on sentiment; watch whether tech rotation accelerates as energy defensives give back gains", "tag": "WATCH", "color": "yellow" },
+    { "text": "Hormuz Reopening Execution & Oil Price Path", "detail": "Deal signed but traffic normalization takes days-to-weeks; watch crude for the pace of disinflation — formal signing ceremony expected within 24–48 hours", "tag": "WATCH", "color": "yellow" }
   ],
-  "bias": "Lean <strong>cautious/defensive</strong> — Warsh inherits a stagflation trap with CPI above 4% and no room to cut. <strong>Energy and defense</strong> remain structural longs on the Hormuz supply squeeze; tech faces multiple compression risk if the dot plot shifts hawkish. A confirmed Hormuz reopening and ceasefire would flip the tape to risk-on aggressively."
+  "bias": "Flip to <strong>risk-on</strong> — the Iran peace deal and Hormuz reopening are the deflationary catalyst that changes the macro regime. Energy and defense longs face profit-taking; tech and rate-sensitive sectors re-rate higher. <strong>Warsh's FOMC tone Wednesday is the next key signal</strong> — with energy inflation unwinding, does the dot plot soften? A formal signing ceremony in 24–48 hours is the next confirmation catalyst."
 }
